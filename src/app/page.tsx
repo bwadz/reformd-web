@@ -161,39 +161,112 @@ export default function HomePage() {
       </section>
 
       {/* SECTION 2 — THE PROBLEM */}
-      <section id="problem" className="mx-auto max-w-6xl px-6 py-24">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-semibold md:text-4xl">
-            You’re Not Broken.
-          </h2>
-          <div className="mt-8 space-y-3 text-lg text-white/80">
-            <div>You train harder.</div>
-            <div>You sleep less.</div>
-            <div>You push through.</div>
-            <div className="pt-6 text-white/70">Now you feel:</div>
+      <section id="problem" className="relative mx-auto max-w-6xl px-6 py-28">
+        {/* Background depth */}
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-black" />
+          <div className="absolute left-1/2 top-20 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-gradient-to-r from-red-500/10 via-amber-400/5 to-transparent blur-3xl" />
+        </div>
+
+        <div className="mx-auto grid max-w-5xl items-start gap-16 md:grid-cols-2">
+          {/* LEFT */}
+          <div>
+            <h2 className="text-5xl font-semibold tracking-tight">
+              You’re Not Broken.
+            </h2>
+
+            <div className="mt-10 space-y-4 text-lg text-white/70">
+              <div className="border-l-2 border-white/20 pl-4">
+                You train harder.
+              </div>
+              <div className="border-l-2 border-white/20 pl-4">
+                You sleep less.
+              </div>
+              <div className="border-l-2 border-white/20 pl-4">
+                You push through.
+              </div>
+            </div>
+
+            <div className="mt-12 h-px w-24 bg-white/20" />
+
+            <div className="mt-10">
+              <div className="text-sm uppercase tracking-widest text-white/50">
+                Now you feel
+              </div>
+
+              <div className="mt-5 grid grid-cols-2 gap-4 max-w-md">
+                {["Slower", "Foggy", "Inflamed", "Drained"].map((x) => (
+                  <div
+                    key={x}
+                    className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-white/80 backdrop-blur"
+                  >
+                    {x}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-14 space-y-4 text-lg">
+              <p className="text-white/80">That’s not age.</p>
+              <p className="text-white text-xl">
+                That’s a system under strain.
+              </p>
+            </div>
           </div>
 
-          <ul className="mx-auto mt-6 flex max-w-xl flex-col gap-2 text-lg text-white/80">
-            {["Slower", "Foggy", "Inflamed", "Drained"].map((x) => (
-              <li
-                key={x}
-                className="rounded-xl border border-white/10 bg-white/5 px-5 py-3"
-              >
-                {x}
-              </li>
-            ))}
-          </ul>
+          {/* RIGHT */}
+          <div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold tracking-wide text-white/70">
+                  SYSTEM UNDER STRAIN
+                </div>
+                <div className="text-sm text-white/50">78%</div>
+              </div>
 
-          <p className="mt-10 text-lg leading-relaxed text-white/80">
-            That’s not age.
-            <br />
-            That’s a system under strain.
-          </p>
+              <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-white/10">
+                <div className="h-full w-[78%] rounded-full bg-gradient-to-r from-red-500/70 via-amber-400/60 to-white/20" />
+              </div>
 
-          <p className="mt-6 text-lg leading-relaxed text-white/70">
+              <div className="mt-8 space-y-4">
+                {[
+                  { label: "Sleep debt", dir: "↑" },
+                  { label: "Inflammation", dir: "↑" },
+                  { label: "Recovery", dir: "↓" },
+                ].map((m) => (
+                  <div
+                    key={m.label}
+                    className="flex items-center justify-between rounded-xl border border-white/10 bg-black/30 px-5 py-4"
+                  >
+                    <div className="text-sm text-white/70">{m.label}</div>
+                    <div className="text-sm font-semibold text-white/70">
+                      {m.dir}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 rounded-xl border border-white/10 bg-black/40 p-5">
+                <p className="text-sm leading-relaxed text-white/60">
+                  This is what “getting older” looks like when your inputs stay
+                  chaotic and your recovery stops cashing the checks.
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-6 text-xs text-white/40">
+              No shame. No excuses. Just signal → system → solution.
+            </p>
+          </div>
+        </div>
+
+        {/* FULL WIDTH TAKEAWAY */}
+        <div className="mx-auto mt-24 max-w-4xl text-center">
+          <p className="text-2xl md:text-3xl font-light text-white/70">
             Most solutions patch symptoms.
-            <br />
-            <span className="text-white">Re:Formd rebuilds the system.</span>
+          </p>
+          <p className="mt-4 text-3xl md:text-4xl font-semibold tracking-tight text-white">
+            Re:Formd rebuilds the system.
           </p>
         </div>
       </section>
