@@ -5,14 +5,71 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function HomePage() {
-  const [toast, setToast] = useState<string | null>(null);
-
   const year = useMemo(() => new Date().getFullYear(), []);
 
+  const [toast, setToast] = useState<string | null>(null);
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [form, setForm] = useState({
+    full_name: "",
+    email: "",
+    goal: "",
+    biggest_issue: "",
+    timeframe: "",
+    notes: "",
+  });
+
   function onJoinWaitlist() {
-    // Placeholder for future DB-backed form (we'll wire this up next)
-    setToast("Waitlist form coming next — wiring to DB.");
-    setTimeout(() => setToast(null), 2500);
+    setWaitlistOpen(true);
+  }
+
+  function closeWaitlist() {
+    setWaitlistOpen(false);
+  }
+
+  async function submitWaitlist() {
+    const email = form.email.trim().toLowerCase();
+
+    if (!email) {
+      setToast("Email is required.");
+      setTimeout(() => setToast(null), 2500);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, email }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Failed to submit.");
+
+      closeWaitlist();
+      setForm({
+        full_name: "",
+        email: "",
+        goal: "",
+        biggest_issue: "",
+        timeframe: "",
+        notes: "",
+      });
+
+      setToast(
+        data?.already
+          ? "You’re already on the list."
+          : "You’re in. Welcome to Re:Formd.",
+      );
+      setTimeout(() => setToast(null), 3000);
+    } catch (e: any) {
+      setToast(e?.message || "Something broke. Try again.");
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -31,12 +88,12 @@ export default function HomePage() {
               />
             </Link>
 
-            <Link
-              href="#waitlist"
+            <button
+              onClick={onJoinWaitlist}
               className="rounded-xl bg-white px-4 sm:px-6 py-2 text-sm font-semibold text-black transition hover:opacity-90"
             >
               Join the Waitlist
-            </Link>
+            </button>
           </div>
         </header>
 
@@ -49,17 +106,18 @@ export default function HomePage() {
             }}
           />
 
-          {/* Mobile: darker overall overlay */}
+          {/* Mobile: darker overlay */}
           <div className="absolute inset-0 bg-black/85 sm:hidden" />
 
-          {/* Desktop+: directional overlay (keep phone visible) */}
-          <div className="absolute inset-0 hidden sm:block bg-gradient-to-r from-black/80 via-black/45 to-black/10" />
+          {/* Desktop+: lighter directional overlay (so desktop isn’t crushed) */}
+          <div className="absolute inset-0 hidden sm:block bg-gradient-to-r from-black/70 via-black/35 to-black/10" />
 
-          {/* Bottom fade (all sizes) */}
+          {/* Bottom fade */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/55" />
 
-          <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-center px-4 sm:px-6 py-12 sm:py-16">
-            <div className="max-w-2xl">
+          {/* NOTE: nudged up on mobile to reduce dead space */}
+          <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-center px-4 sm:px-6 py-10 sm:py-16">
+            <div className="max-w-2xl -mt-10 sm:mt-0">
               <div className="mb-4 text-[11px] sm:text-xs tracking-[0.24em] accent">
                 RE:FORMD — THE HUMAN PERFORMANCE SYSTEM
               </div>
@@ -86,11 +144,8 @@ export default function HomePage() {
                 </span>
               </p>
 
-              {/* WAITLIST (button-only for now) */}
-              <div
-                id="waitlist"
-                className="mt-7 sm:mt-8 flex flex-col sm:flex-row sm:items-center gap-3"
-              >
+              {/* WAITLIST CTA */}
+              <div className="mt-7 sm:mt-8 flex flex-col sm:flex-row sm:items-center gap-3">
                 <button
                   onClick={onJoinWaitlist}
                   className="w-full sm:w-auto inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
@@ -99,7 +154,7 @@ export default function HomePage() {
                 </button>
 
                 <p className="text-xs text-white/50">
-                  Next: clean branded form → submits to DB.
+                  Early access invites. No spam.
                 </p>
               </div>
 
@@ -111,12 +166,6 @@ export default function HomePage() {
               </p>
             </div>
           </div>
-
-          {toast && (
-            <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border border-white/15 bg-black/90 px-4 py-2 text-sm text-white/80">
-              {toast}
-            </div>
-          )}
         </section>
 
         {/* SECTION 2 — EMOTIONAL / YOU'RE NOT BROKEN */}
@@ -217,7 +266,6 @@ export default function HomePage() {
 
                 return (
                   <>
-                    {/* Header */}
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="text-sm font-semibold tracking-wide text-white/70">
@@ -239,7 +287,6 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* Overall bar */}
                     <div className="mt-5 h-3 w-full overflow-hidden rounded-full bg-white/10">
                       <div
                         className="h-full rounded-full transition-all duration-700"
@@ -251,7 +298,6 @@ export default function HomePage() {
                       />
                     </div>
 
-                    {/* Category rows */}
                     <div className="mt-8 space-y-6">
                       {categories.map((item) => (
                         <div key={item.label}>
@@ -284,7 +330,6 @@ export default function HomePage() {
                       ))}
                     </div>
 
-                    {/* Footer note */}
                     <div className="mt-8 rounded-xl border border-white/10 bg-black/40 p-4">
                       <p className="text-sm leading-relaxed text-white/60">
                         Scores reflect biomarker trends, recovery data, protocol
@@ -298,7 +343,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* TAKEAWAY */}
           <div className="mx-auto mt-14 sm:mt-16 max-w-4xl text-center">
             <p className="text-xl sm:text-2xl md:text-3xl font-light text-white/70">
               Most solutions patch symptoms.
@@ -337,7 +381,6 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Steps */}
             <div className="mt-12 space-y-6">
               {[
                 {
@@ -392,9 +435,7 @@ export default function HomePage() {
                     </div>
 
                     <div
-                      className={`mt-3 text-xl font-semibold ${
-                        s.k === "01" ? "text-white" : "text-white/85"
-                      }`}
+                      className={`mt-3 text-xl font-semibold ${s.k === "01" ? "text-white" : "text-white/85"}`}
                     >
                       {s.title}
                     </div>
@@ -407,7 +448,6 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* Closing Statement */}
             <div className="mx-auto mt-12 sm:mt-14 max-w-4xl text-center">
               <div className="text-xs uppercase tracking-[0.3em] accent">
                 The Re:Formd Standard
@@ -440,7 +480,6 @@ export default function HomePage() {
           </div>
 
           <div className="mx-auto grid max-w-5xl items-start gap-10 lg:gap-14 lg:grid-cols-2">
-            {/* LEFT */}
             <div>
               <div className="text-xs uppercase tracking-widest accent">
                 Track
@@ -473,7 +512,6 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* RIGHT: SCORECARD  */}
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold tracking-wide text-white/70">
@@ -614,7 +652,6 @@ export default function HomePage() {
           </div>
 
           <div className="mx-auto grid max-w-5xl items-start gap-10 lg:gap-14 lg:grid-cols-2">
-            {/* LEFT */}
             <div>
               <div className="text-xs uppercase tracking-widest accent">
                 Adapt
@@ -647,7 +684,6 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* RIGHT: FEEDBACK LOOP */}
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold tracking-wide text-white/70">
@@ -727,12 +763,12 @@ export default function HomePage() {
             </h2>
 
             <div className="mt-12">
-              <Link
-                href="#waitlist"
+              <button
+                onClick={onJoinWaitlist}
                 className="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl bg-white px-12 py-4 text-base font-semibold text-black transition hover:opacity-90"
               >
                 Join the Waitlist
-              </Link>
+              </button>
             </div>
 
             <p className="mt-12 text-xs tracking-wide text-white/40">
@@ -788,6 +824,141 @@ export default function HomePage() {
           </div>
         </footer>
       </div>
+
+      {/* WAITLIST MODAL */}
+      {waitlistOpen && (
+        <div className="fixed inset-0 z-[60]">
+          {/* Backdrop */}
+          <button
+            onClick={closeWaitlist}
+            className="absolute inset-0 bg-black/80"
+            aria-label="Close waitlist modal"
+          />
+
+          {/* Modal */}
+          <div
+            className="absolute left-1/2 top-1/2 w-[92%] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Join the waitlist"
+          >
+            <div className="flex items-start justify-between gap-6">
+              {/* Left: Brand header */}
+              <div className="min-w-0">
+                <div className="text-xs uppercase tracking-[0.28em] text-black/50">
+                  Join the Waitlist
+                </div>
+
+                <div className="mt-3 flex items-center gap-3">
+                  <Image
+                    src="/images/01-swirl-black.png"
+                    alt="Re:Formd"
+                    width={26}
+                    height={26}
+                    className="shrink-0"
+                  />
+                  <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight text-black">
+                    Built to Last.
+                  </h3>
+                </div>
+
+                <p className="mt-2 text-sm text-black/60">
+                  Email is required. Everything else is optional.
+                </p>
+
+                <div className="mt-5 h-px w-full bg-black/10" />
+              </div>
+
+              {/* Right: Close */}
+              <button
+                onClick={closeWaitlist}
+                className="rounded-full p-2 text-black/40 hover:text-black hover:bg-black/5 transition"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3">
+              <input
+                value={form.full_name}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, full_name: e.target.value }))
+                }
+                placeholder="Full name (optional)"
+                className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25 focus:outline-none"
+              />
+
+              <input
+                value={form.email}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, email: e.target.value }))
+                }
+                placeholder="Email (required)"
+                type="email"
+                className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25 focus:outline-none"
+              />
+
+              <input
+                value={form.goal}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, goal: e.target.value }))
+                }
+                placeholder="Primary goal (optional)"
+                className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25 focus:outline-none"
+              />
+
+              <input
+                value={form.biggest_issue}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, biggest_issue: e.target.value }))
+                }
+                placeholder="Biggest bottleneck right now? (optional)"
+                className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25 focus:outline-none"
+              />
+
+              <input
+                value={form.timeframe}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, timeframe: e.target.value }))
+                }
+                placeholder="Timeframe (e.g., 30 days / 90 days) (optional)"
+                className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25 focus:outline-none"
+              />
+
+              <textarea
+                value={form.notes}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, notes: e.target.value }))
+                }
+                placeholder="Anything else? (optional)"
+                rows={3}
+                className="resize-none rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25 focus:outline-none"
+              />
+            </div>
+
+            <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-black/50">
+                By submitting, you agree to receive waitlist updates.
+              </p>
+
+              <button
+                onClick={submitWaitlist}
+                disabled={submitting}
+                className="inline-flex items-center justify-center rounded-2xl bg-black px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+              >
+                {submitting ? "Submitting…" : "Submit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 z-[70] -translate-x-1/2 rounded-full bg-black border border-white/15 px-4 py-2 text-sm text-white/80">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
