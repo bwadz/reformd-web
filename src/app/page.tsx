@@ -1,390 +1,787 @@
 "use client";
 
 import { useMemo, useState } from "react";
-
-const NAV = [
-  { id: "problem", label: "Problem" },
-  { id: "upstream", label: "Upstream" },
-  { id: "framework", label: "Framework" },
-  { id: "infrastructure", label: "Infrastructure" },
-  { id: "who", label: "Who It’s For" },
-];
-
-function scrollToId(id: string) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.scrollIntoView({ behavior: "smooth", block: "start" });
-}
+import Link from "next/link";
+import Image from "next/image";
 
 export default function HomePage() {
-  const [email, setEmail] = useState("");
   const [toast, setToast] = useState<string | null>(null);
 
   const year = useMemo(() => new Date().getFullYear(), []);
 
   function onJoinWaitlist() {
-    // Lightweight v1: mailto fallback (swap to real waitlist API later)
-    const trimmed = email.trim();
-    const subject = encodeURIComponent("Re:Formd Waitlist");
-    const body = encodeURIComponent(
-      `Please add me to the Re:Formd waitlist.\n\nEmail: ${trimmed || "(not provided)"}\n`,
-    );
-    window.location.href = `mailto:waitlist@getreformd.com?subject=${subject}&body=${body}`;
-    setToast("Opening your email client to join the waitlist.");
-    setTimeout(() => setToast(null), 3500);
+    // Placeholder for future DB-backed form (we'll wire this up next)
+    setToast("Waitlist form coming next — wiring to DB.");
+    setTimeout(() => setToast(null), 2500);
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Top Nav */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full border border-white/15" />
-            <div className="leading-tight">
-              <div className="text-sm tracking-[0.22em] text-white/70">
-                RE:FORMD
-              </div>
-              <div className="text-xs text-white/50">Built to Last</div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-black text-white overflow-x-hidden">
+      <div className="min-h-screen bg-black text-white">
+        {/* HEADER */}
+        <header className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-white/10">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-4">
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/images/04-horizontal-basic-white.png"
+                alt="Re:Formd"
+                width={140}
+                height={32}
+                priority
+              />
+            </Link>
 
-          <nav className="hidden items-center gap-6 md:flex">
-            {NAV.map((n) => (
-              <button
-                key={n.id}
-                onClick={() => scrollToId(n.id)}
-                className="text-sm text-white/70 hover:text-white"
-              >
-                {n.label}
-              </button>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onJoinWaitlist}
-              className="rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
+            <Link
+              href="#waitlist"
+              className="rounded-xl bg-white px-4 sm:px-6 py-2 text-sm font-semibold text-black transition hover:opacity-90"
             >
               Join the Waitlist
-            </button>
+            </Link>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* HERO */}
-      <section className="relative min-h-[100svh] overflow-hidden">
-        {/* Background Image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: "url(/images/reformd-hero-v3-1920x1080.webp)",
-          }}
-        />
+        {/* HERO */}
+        <section className="relative min-h-[100svh] overflow-hidden pt-20 sm:pt-24">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: "url(/images/reformd-hero-v3-1920x1080.webp)",
+            }}
+          />
 
-        {/* Directional overlay: dark on left for text, clear on right for phone */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/10" />
+          {/* Mobile: darker overall overlay */}
+          <div className="absolute inset-0 bg-black/85 sm:hidden" />
 
-        {/* Subtle bottom fade only */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
+          {/* Desktop+: directional overlay (keep phone visible) */}
+          <div className="absolute inset-0 hidden sm:block bg-gradient-to-r from-black/80 via-black/45 to-black/10" />
 
-        <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-center px-6 py-20">
-          <div className="max-w-2xl">
-            <div className="mb-4 text-xs tracking-[0.28em] text-white/70">
-              RE:FORMD — THE HUMAN PERFORMANCE SYSTEM
-            </div>
+          {/* Bottom fade (all sizes) */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/55" />
 
-            <h1 className="text-5xl font-bold leading-[1.02] md:text-6xl">
-              It’s Not Aging.
-              <br />
-              It’s Accumulation.
-            </h1>
-
-            <p className="mt-6 text-lg leading-relaxed text-white/80">
-              Low energy. Brain fog. Hormone crashes.
-              <br />
-              Your body isn’t failing.
-              <br />
-              It’s reacting.
-              <br />
-              <br />
-              Years of stress. Poor recovery. Inflammation. Neglect.
-              <br />
-              Fix the machine.
-              <br />
-              Relieve the symptoms.
-            </p>
-
-            <p className="mt-6 text-sm leading-relaxed text-white/60">
-              A structured health optimization platform built on biomarker
-              tracking, hormone optimization, and data-driven performance
-              systems.
-            </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex w-full max-w-md items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 backdrop-blur">
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email address"
-                  className="w-full bg-transparent text-sm text-white placeholder:text-white/40 outline-none"
-                  type="email"
-                />
+          {/* NOTE: Mobile text moved up by using items-start + padding-top,
+              while keeping desktop centered */}
+          <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-start sm:justify-center px-4 sm:px-6 pt-8 sm:pt-0 pb-12 sm:py-16">
+            <div className="max-w-2xl">
+              <div className="mb-4 text-[11px] sm:text-xs tracking-[0.24em] accent">
+                RE:FORMD — THE HUMAN PERFORMANCE SYSTEM
               </div>
 
-              <button
-                onClick={onJoinWaitlist}
-                className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.05] tracking-tight">
+                It’s Not Aging.
+                <br />
+                It’s Accumulation.
+              </h1>
+
+              <p className="mt-5 sm:mt-6 text-base sm:text-lg leading-relaxed text-white/80">
+                Low energy. Brain fog. Hormone crashes.
+                <br />
+                Your body isn’t failing - It’s reacting to years of stress, poor
+                recovery & neglect.
+                <br />
+                <br />
+                <span className="text-white/80 font-semibold">
+                  Fix the machine to relieve the symptoms.
+                </span>
+              </p>
+
+              {/* WAITLIST (button-only for now) */}
+              <div
+                id="waitlist"
+                className="mt-7 sm:mt-8 flex flex-col sm:flex-row sm:items-center gap-3"
               >
-                JOIN THE WAITLIST
-              </button>
-
-              {/* <button
-                onClick={() => scrollToId("framework")}
-                className="rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/40"
-              >
-                SEE THE FRAMEWORK
-              </button> */}
-            </div>
-
-            <div className="mt-6 text-sm text-white/60">
-              Built for people done guessing.
-            </div>
-          </div>
-        </div>
-
-        {toast && (
-          <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border border-white/15 bg-black/90 px-4 py-2 text-sm text-white/80 backdrop-blur">
-            {toast}
-          </div>
-        )}
-      </section>
-
-      {/* SECTION 2 — THE PROBLEM */}
-      <section id="problem" className="mx-auto max-w-6xl px-6 py-24">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-semibold md:text-4xl">
-            You’re Not Broken.
-          </h2>
-          <div className="mt-8 space-y-3 text-lg text-white/80">
-            <div>You train harder.</div>
-            <div>You sleep less.</div>
-            <div>You push through.</div>
-            <div className="pt-6 text-white/70">Now you feel:</div>
-          </div>
-
-          <ul className="mx-auto mt-6 flex max-w-xl flex-col gap-2 text-lg text-white/80">
-            {["Slower", "Foggy", "Inflamed", "Drained"].map((x) => (
-              <li
-                key={x}
-                className="rounded-xl border border-white/10 bg-white/5 px-5 py-3"
-              >
-                {x}
-              </li>
-            ))}
-          </ul>
-
-          <p className="mt-10 text-lg leading-relaxed text-white/80">
-            That’s not age.
-            <br />
-            That’s a system under strain.
-          </p>
-
-          <p className="mt-6 text-lg leading-relaxed text-white/70">
-            Most solutions patch symptoms.
-            <br />
-            <span className="text-white">Re:Formd rebuilds the system.</span>
-          </p>
-        </div>
-      </section>
-
-      {/* SECTION 3 — UPSTREAM HEALTH */}
-      <section
-        id="upstream"
-        className="border-y border-white/10 bg-white/[0.03]"
-      >
-        <div className="mx-auto max-w-6xl px-6 py-24">
-          <div className="max-w-3xl">
-            <h2 className="text-3xl font-semibold md:text-4xl">
-              Fix the Root.
-            </h2>
-            <p className="mt-8 text-lg leading-relaxed text-white/80">
-              Energy, recovery, hormone balance, inflammation, metabolic health
-              — they are connected.
-            </p>
-            <p className="mt-6 text-lg leading-relaxed text-white/80">
-              We use structured assessment and biomarker tracking to identify
-              upstream drivers and correct them.
-            </p>
-            <div className="mt-10 space-y-2 text-lg text-white/70">
-              <div>No hacks.</div>
-              <div>No surface fixes.</div>
-              <div>Data-driven longevity.</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 4 — THE FRAMEWORK */}
-      <section id="framework" className="mx-auto max-w-6xl px-6 py-24">
-        <h2 className="text-3xl font-semibold md:text-4xl">
-          Diagnose. Explain. Optimize. Track. Adapt.
-        </h2>
-
-        <div className="mt-12 grid gap-4 md:grid-cols-5">
-          {[
-            {
-              t: "Diagnose",
-              b: "Know your baseline. Biomarkers. Performance inputs.",
-            },
-            { t: "Explain", b: "Identify upstream bottlenecks." },
-            {
-              t: "Optimize",
-              b: "Structured protocols across training, recovery, nutrition, and hormone optimization.",
-            },
-            {
-              t: "Track",
-              b: "Daily performance scoring and measurable change.",
-            },
-            { t: "Adapt", b: "Refine based on real data." },
-          ].map((x) => (
-            <div
-              key={x.t}
-              className="rounded-2xl border border-white/10 bg-white/5 p-5"
-            >
-              <div className="text-sm tracking-[0.22em] text-white/60">
-                {x.t.toUpperCase()}
-              </div>
-              <div className="mt-3 text-base leading-relaxed text-white/85">
-                {x.b}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-10 text-lg text-white/70">
-          No guessing.
-          <br />
-          No biohacking roulette.
-        </div>
-      </section>
-
-      {/* SECTION 5 — INFRASTRUCTURE */}
-      <section
-        id="infrastructure"
-        className="border-y border-white/10 bg-white/[0.03]"
-      >
-        <div className="mx-auto max-w-6xl px-6 py-24">
-          <div className="max-w-3xl">
-            <h2 className="text-3xl font-semibold md:text-4xl">
-              This Isn’t Wellness.
-            </h2>
-            <p className="mt-8 text-lg leading-relaxed text-white/80">
-              It’s infrastructure.
-            </p>
-            <p className="mt-6 text-lg leading-relaxed text-white/80">
-              A health optimization platform designed for measurable
-              performance.
-            </p>
-
-            <ul className="mt-10 grid gap-3 sm:grid-cols-2">
-              {[
-                "Biomarker tracking",
-                "Hormone optimization",
-                "Structured protocols",
-                "Performance analytics",
-                "Longevity modeling",
-              ].map((x) => (
-                <li
-                  key={x}
-                  className="rounded-xl border border-white/10 bg-black/30 px-5 py-3 text-white/80"
+                <button
+                  onClick={onJoinWaitlist}
+                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
                 >
-                  {x}
-                </li>
-              ))}
-            </ul>
+                  JOIN THE WAITLIST
+                </button>
+              </div>
 
-            <p className="mt-10 text-lg leading-relaxed text-white/70">
-              Built for long-term function — not short-term hype.
+              <p className="mt-5 sm:mt-6 text-sm leading-relaxed text-white/60">
+                Re:Formd is an AI-driven health optimization system that
+                analyzes your biology, identifies breakdowns in performance
+                pathways, and rebuilds them with structured, accountable,
+                data-backed protocols.
+              </p>
+            </div>
+          </div>
+
+          {toast && (
+            <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border border-white/15 bg-black/90 px-4 py-2 text-sm text-white/80">
+              {toast}
+            </div>
+          )}
+        </section>
+
+        {/* SECTION 2 — EMOTIONAL / YOU'RE NOT BROKEN */}
+        <section
+          id="problem"
+          className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24 overflow-hidden"
+        >
+          <div className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute inset-0 bg-black" />
+            <div className="absolute left-1/2 top-16 h-[360px] w-[720px] -translate-x-1/2 rounded-full bg-gradient-to-r from-red-500/10 via-amber-400/5 to-transparent blur-3xl" />
+          </div>
+
+          <div className="mx-auto grid max-w-5xl items-start gap-10 lg:gap-14 lg:grid-cols-2">
+            {/* LEFT */}
+            <div>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight">
+                You’re Not Broken.
+              </h2>
+
+              <p className="mt-5 sm:mt-6 text-base sm:text-lg leading-relaxed text-white/75">
+                You don’t need to be “fixed.”
+                <br />
+                <br />
+                You need maintenance & optimization.
+                <br />
+                You need protocols — and accountability.
+                <br />
+                <br />
+                Your machine needs repair and upkeep.
+                <br />
+                <span className="accent font-semibold">
+                  We can help you rebuild.
+                </span>
+              </p>
+
+              <div className="mt-8 sm:mt-10 h-px w-24 bg-white/15" />
+
+              <div className="mt-8">
+                <div className="text-xs uppercase tracking-widest text-white/50">
+                  Now you feel
+                </div>
+
+                <ul className="mt-5 space-y-3 max-w-md">
+                  {[
+                    "Chronic Pain",
+                    "No Energy",
+                    "Foggy Thinking",
+                    "No Drive",
+                  ].map((x) => (
+                    <li
+                      key={x}
+                      className="flex items-center gap-3 text-base sm:text-lg text-white/80"
+                    >
+                      <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                      {x}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* RIGHT: System Under Strain */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8">
+              {(() => {
+                const categories = [
+                  {
+                    label: "Recovery",
+                    score: 62,
+                    note: "sleep, training load, stress, lifestyle",
+                  },
+                  {
+                    label: "Metabolic",
+                    score: 74,
+                    note: "nutrition, body comp, glucose control",
+                  },
+                  {
+                    label: "Hormonal",
+                    score: 58,
+                    note: "endocrine signaling, labs, thyroid/cortisol",
+                  },
+                  {
+                    label: "Performance",
+                    score: 81,
+                    note: "strength, output, endurance, readiness",
+                  },
+                  {
+                    label: "Compliance",
+                    score: 69,
+                    note: "execution, consistency, adherence",
+                  },
+                ] as const;
+
+                const overall =
+                  Math.round(
+                    categories.reduce((sum, c) => sum + c.score, 0) /
+                      categories.length,
+                  ) || 0;
+
+                return (
+                  <>
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="text-sm font-semibold tracking-wide text-white/70">
+                          SYSTEM SCORE
+                        </div>
+                        <div className="mt-1 text-xs text-white/40">
+                          Composite average across 5 categories
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-xs text-white/40">Overall</div>
+                        <div className="text-2xl font-semibold text-white/85">
+                          {overall}
+                          <span className="text-sm font-medium text-white/50">
+                            /100
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Overall bar */}
+                    <div className="mt-5 h-3 w-full overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${overall}%`,
+                          background:
+                            "linear-gradient(to right, #ef4444, #facc15, #22c55e)",
+                        }}
+                      />
+                    </div>
+
+                    {/* Category rows */}
+                    <div className="mt-8 space-y-6">
+                      {categories.map((item) => (
+                        <div key={item.label}>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                              <div className="text-sm text-white/80">
+                                {item.label}
+                                <span className="text-xs text-white/45">
+                                  {" "}
+                                  ({item.note})
+                                </span>
+                              </div>
+                            </div>
+                            <div className="shrink-0 text-sm font-semibold text-white/80">
+                              {item.score}
+                            </div>
+                          </div>
+
+                          <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-white/10">
+                            <div
+                              className="h-full rounded-full transition-all duration-700"
+                              style={{
+                                width: `${item.score}%`,
+                                background:
+                                  "linear-gradient(to right, #ef4444, #facc15, #22c55e)",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Footer note */}
+                    <div className="mt-8 rounded-xl border border-white/10 bg-black/40 p-4">
+                      <p className="text-sm leading-relaxed text-white/60">
+                        Scores reflect biomarker trends, recovery data, protocol
+                        execution, and performance output. Improve the inputs —
+                        the system rises.
+                      </p>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* TAKEAWAY */}
+          <div className="mx-auto mt-14 sm:mt-16 max-w-4xl text-center">
+            <p className="text-xl sm:text-2xl md:text-3xl font-light text-white/70">
+              Most solutions patch symptoms.
+            </p>
+            <p className="mt-3 text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-white">
+              Re:Formd rebuilds the system.
+            </p>
+            <p className="mt-3 text-sm sm:text-base text-white/60">
+              We identify the breakdowns — then rebuild with personalized
+              protocols.
             </p>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* SECTION 6 — WHO IT’S FOR */}
-      <section id="who" className="mx-auto max-w-6xl px-6 py-24">
-        <h2 className="text-3xl font-semibold md:text-4xl">
-          Built for People Who Refuse to Drift.
-        </h2>
+        {/* SECTION 3 — THE RE:FORMD SYSTEM */}
+        <section
+          id="method"
+          className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24 overflow-hidden"
+        >
+          <div className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute inset-0 bg-black" />
+            <div className="absolute left-1/2 top-14 h-[360px] w-[760px] -translate-x-1/2 rounded-full bg-gradient-to-r from-white/6 via-white/3 to-transparent blur-3xl" />
+          </div>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {["Entrepreneurs", "Athletes", "Parents", "Leaders"].map((x) => (
-            <div
-              key={x}
-              className="rounded-2xl border border-white/10 bg-white/5 p-6"
-            >
-              <div className="text-lg font-semibold">{x}</div>
+          <div className="mx-auto max-w-5xl">
+            <div className="text-center">
+              <div className="text-xs uppercase tracking-widest accent">
+                The System
+              </div>
+              <h2 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight">
+                Diagnose. Explain. Optimize. Track. Adapt.
+              </h2>
+              <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg leading-relaxed text-white/70">
+                A repeatable process for rebuilding performance — with
+                protocols, accountability, and measurable outcomes.
+              </p>
             </div>
-          ))}
-        </div>
 
-        <p className="mt-10 text-lg leading-relaxed text-white/80">
-          If you want your edge back — and proof it’s working — this is your
-          system.
-        </p>
-      </section>
+            {/* Steps */}
+            <div className="mt-12 space-y-6">
+              {[
+                {
+                  k: "01",
+                  title: "Diagnose",
+                  desc: "Baseline the truth. Identify signal before action.",
+                },
+                {
+                  k: "02",
+                  title: "Explain",
+                  desc: "Turn chaos into a clear upstream map.",
+                },
+                {
+                  k: "03",
+                  title: "Optimize",
+                  desc: "Build structured protocols that fit real life.",
+                },
+                {
+                  k: "04",
+                  title: "Track",
+                  desc: "Measure compliance and system responses daily.",
+                },
+                {
+                  k: "05",
+                  title: "Adapt",
+                  desc: "Recalibrate inputs until performance holds.",
+                },
+              ].map((s) => (
+                <div
+                  key={s.k}
+                  className={`relative rounded-2xl border ${
+                    s.k === "01"
+                      ? "border-white/25 bg-black/40"
+                      : "border-white/10 bg-black/30"
+                  } p-6`}
+                >
+                  <div
+                    className={`absolute top-4 right-6 text-7xl font-bold tracking-tight ${
+                      s.k === "01" ? "text-white/25" : "text-white/15"
+                    }`}
+                  >
+                    {s.k}
+                  </div>
 
-      {/* FINAL CTA */}
-      <section className="border-t border-white/10">
-        <div className="mx-auto max-w-6xl px-6 py-24">
-          <div className="max-w-3xl">
-            <h2 className="text-4xl font-semibold leading-tight md:text-5xl">
-              Stop Managing Symptoms.
+                  <div className="relative">
+                    <div
+                      className={`text-xs uppercase tracking-[0.3em] ${
+                        s.k === "01" ? "text-white/50" : "text-white/35"
+                      }`}
+                    >
+                      Step {s.k}
+                    </div>
+
+                    <div
+                      className={`mt-3 text-xl font-semibold ${
+                        s.k === "01" ? "text-white" : "text-white/85"
+                      }`}
+                    >
+                      {s.title}
+                    </div>
+
+                    <p className="mt-2 text-sm leading-relaxed text-white/60 max-w-md">
+                      {s.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Closing Statement */}
+            <div className="mx-auto mt-12 sm:mt-14 max-w-4xl text-center">
+              <div className="text-xs uppercase tracking-[0.3em] accent">
+                The Re:Formd Standard
+              </div>
+
+              <p className="mt-5 text-xl sm:text-2xl md:text-3xl font-light text-white/70 leading-relaxed">
+                No hacks. No guesswork. No hype.
+              </p>
+
+              <p className="mt-4 text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-white">
+                Just signal → protocol → accountability → results.
+              </p>
+
+              <p className="mt-6 text-sm sm:text-base leading-relaxed text-white/60">
+                Diagnose the truth. Build the plan. Track what changes. Adapt
+                until the system holds.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 4 — TRACK */}
+        <section
+          id="track"
+          className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24 overflow-hidden"
+        >
+          <div className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute inset-0 bg-black" />
+            <div className="absolute left-1/2 top-14 h-[360px] w-[760px] -translate-x-1/2 rounded-full bg-gradient-to-r from-white/6 via-white/3 to-transparent blur-3xl" />
+          </div>
+
+          <div className="mx-auto grid max-w-5xl items-start gap-10 lg:gap-14 lg:grid-cols-2">
+            {/* LEFT */}
+            <div>
+              <div className="text-xs uppercase tracking-widest accent">
+                Track
+              </div>
+              <h2 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight">
+                Tracking creates improvement.
+              </h2>
+              <p className="mt-5 sm:mt-6 max-w-xl text-base sm:text-lg leading-relaxed text-white/70">
+                Effort without feedback turns into burnout. Tracking turns
+                effort into progress — because it shows what’s working and what
+                needs to change.
+              </p>
+
+              <div className="mt-8 space-y-3 text-base sm:text-lg text-white/70">
+                <div className="border-l-2 border-white/20 pl-4">
+                  Compliance drives outcomes.
+                </div>
+                <div className="border-l-2 border-white/20 pl-4">
+                  Signals reveal what matters.
+                </div>
+                <div className="border-l-2 border-white/20 pl-4">
+                  Trends beat opinions.
+                </div>
+              </div>
+
+              <div className="mt-8 sm:mt-10 h-px w-24 bg-white/15" />
+
+              <p className="mt-8 text-base sm:text-lg leading-relaxed text-white/80">
+                If you can’t track it, you can’t own it.
+              </p>
+            </div>
+
+            {/* RIGHT: SCORECARD  */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold tracking-wide text-white/70">
+                  DAILY SCORECARD
+                </div>
+                <div className="text-sm text-white/50">Week of Feb 27</div>
+              </div>
+
+              {(() => {
+                const dailyScore = 82;
+
+                const scoreColor =
+                  dailyScore >= 80
+                    ? "text-green-400"
+                    : dailyScore >= 60
+                      ? "text-yellow-300"
+                      : "text-red-400";
+
+                const metrics = [
+                  {
+                    label: "Recovery",
+                    val: "Good",
+                    note: "readiness",
+                    trend: "up" as const,
+                  },
+                  {
+                    label: "Sleep",
+                    val: "7.2h",
+                    note: "last night",
+                    trend: "up" as const,
+                  },
+                  {
+                    label: "Training",
+                    val: "Done",
+                    note: "session",
+                    trend: "neutral" as const,
+                  },
+                  {
+                    label: "Nutrition",
+                    val: "78%",
+                    note: "on plan",
+                    trend: "down" as const,
+                  },
+                ];
+
+                const trendColor = (t: "up" | "down" | "neutral") =>
+                  t === "up"
+                    ? "text-green-400"
+                    : t === "down"
+                      ? "text-red-400"
+                      : "text-white/50";
+
+                const trendSymbol = (t: "up" | "down" | "neutral") =>
+                  t === "up" ? "↑" : t === "down" ? "↓" : "→";
+
+                return (
+                  <>
+                    <div className="mt-6 rounded-xl border border-white/10 bg-black/30 p-5">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-white/60">
+                          My Daily System Score
+                        </div>
+                        <div className={`text-sm font-semibold ${scoreColor}`}>
+                          {dailyScore}
+                          <span className="text-white/40 font-medium">
+                            /100
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-white/10">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{
+                            width: `${dailyScore}%`,
+                            background:
+                              "linear-gradient(to right, #ef4444, #facc15, #22c55e)",
+                          }}
+                        />
+                      </div>
+
+                      <div className="mt-3 text-xs text-white/40">
+                        Trend reflects your last 7 days of inputs and recovery.
+                      </div>
+                    </div>
+
+                    <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                      {metrics.map((m) => (
+                        <div
+                          key={m.label}
+                          className="rounded-xl border border-white/10 bg-black/30 p-5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm text-white/60">
+                              {m.label}
+                            </div>
+                            <div
+                              className={`text-sm font-semibold ${trendColor(m.trend)}`}
+                            >
+                              {trendSymbol(m.trend)}
+                            </div>
+                          </div>
+                          <div className="mt-3 text-xl font-semibold text-white/80">
+                            {m.val}
+                          </div>
+                          <div className="mt-1 text-xs text-white/40">
+                            {m.note}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-6 rounded-xl border border-white/10 bg-black/40 p-5">
+                      <div className="text-xs uppercase tracking-widest text-white/40 font-semibold">
+                        Daily Insight
+                      </div>
+                      <p className="mt-3 text-sm leading-relaxed text-white/60">
+                        Recovery is trending up as sleep consistency stabilizes.
+                        Keep training load steady today — push nutrition
+                        compliance to 85% to lock the gain.
+                      </p>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 5 — ADAPT */}
+        <section
+          id="adapt"
+          className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24 overflow-hidden"
+        >
+          <div className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute inset-0 bg-black" />
+            <div className="absolute left-1/2 top-14 h-[360px] w-[760px] -translate-x-1/2 rounded-full bg-gradient-to-r from-white/6 via-white/3 to-transparent blur-3xl" />
+          </div>
+
+          <div className="mx-auto grid max-w-5xl items-start gap-10 lg:gap-14 lg:grid-cols-2">
+            {/* LEFT */}
+            <div>
+              <div className="text-xs uppercase tracking-widest accent">
+                Adapt
+              </div>
+              <h2 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight">
+                Recalibrate the protocols.
+              </h2>
+              <p className="mt-5 sm:mt-6 max-w-xl text-base sm:text-lg leading-relaxed text-white/70">
+                The win isn’t “a plan.” The win is a plan that evolves with your
+                biology. We use your tracked results to adjust training,
+                recovery, nutrition, and protocols until the system holds.
+              </p>
+
+              <div className="mt-8 space-y-3 text-base sm:text-lg text-white/70">
+                <div className="border-l-2 border-white/20 pl-4">
+                  Keep what works.
+                </div>
+                <div className="border-l-2 border-white/20 pl-4">
+                  Cut what doesn’t.
+                </div>
+                <div className="border-l-2 border-white/20 pl-4">
+                  Progress without breaking you.
+                </div>
+              </div>
+
+              <div className="mt-8 sm:mt-10 h-px w-24 bg-white/15" />
+
+              <p className="mt-8 text-base sm:text-lg leading-relaxed text-white/80">
+                This is how improvement becomes permanent.
+              </p>
+            </div>
+
+            {/* RIGHT: FEEDBACK LOOP */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold tracking-wide text-white/70">
+                  FEEDBACK LOOP
+                </div>
+                <div className="text-sm text-white/50">
+                  Weekly Recalibration
+                </div>
+              </div>
+
+              <div className="mt-8 relative">
+                <div className="absolute left-2 top-1 bottom-1 w-px bg-white/15" />
+
+                <div className="space-y-6">
+                  {[
+                    { t: "Track", d: "Collect daily score + system signals" },
+                    { t: "Review", d: "Identify trends + bottlenecks" },
+                    { t: "Adjust", d: "Modify one lever at a time" },
+                    { t: "Execute", d: "Run protocol for 7 days" },
+                    { t: "Re-score", d: "Confirm measurable improvement" },
+                  ].map((step) => (
+                    <div key={step.t} className="relative pl-6">
+                      <div className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-white/60" />
+                      <div>
+                        <div className="text-sm font-semibold text-white/85">
+                          {step.t}
+                        </div>
+                        <div className="mt-0.5 text-xs text-white/50">
+                          {step.d}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-8 flex items-center justify-center gap-2 text-xs text-white/50">
+                <span>Repeat</span>
+                <span className="text-white/30">↺</span>
+                <span>Until stable</span>
+              </div>
+
+              <div className="mt-6">
+                <p className="text-sm leading-relaxed text-white/60">
+                  Measure → adjust → repeat. Systems improve because they’re
+                  tested.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FINAL CTA — THE DECISION */}
+        <section
+          id="cta"
+          className="relative mx-auto max-w-6xl px-4 sm:px-6 py-24 sm:py-28 lg:py-32 text-center overflow-hidden"
+        >
+          <div className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute inset-0 bg-black" />
+            <div className="absolute left-1/2 top-10 h-[420px] w-[900px] -translate-x-1/2 rounded-full bg-gradient-to-r from-white/10 via-white/5 to-transparent blur-3xl" />
+          </div>
+
+          <div className="mx-auto max-w-3xl">
+            <p className="text-2xl sm:text-3xl md:text-4xl font-light text-white/70">
+              You’re not broken.
+            </p>
+            <p className="mt-3 text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-white">
+              You just need a system.
+            </p>
+
+            <h2 className="mt-10 text-2xl sm:text-3xl md:text-5xl font-semibold tracking-tight leading-tight">
+              Stop guessing.
+              <br className="hidden sm:block" />
+              Stop trying everything.
               <br />
-              Start Rebuilding the Machine.
+              <span className="text-white">Start rebuilding.</span>
             </h2>
 
-            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                onClick={onJoinWaitlist}
-                className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-black hover:bg-white/90"
+            <div className="mt-12">
+              <Link
+                href="#waitlist"
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl bg-white px-12 py-4 text-base font-semibold text-black transition hover:opacity-90"
               >
-                JOIN THE WAITLIST
-              </button>
-              <div className="text-sm text-white/60">
-                Structured health optimization for energy, performance, and
-                longevity.
+                Join the Waitlist
+              </Link>
+            </div>
+
+            <p className="mt-12 text-xs tracking-wide text-white/40">
+              Structured health optimization. Built to Last.
+            </p>
+          </div>
+        </section>
+
+        {/* FOOTER */}
+        <footer className="border-t border-white/10 bg-black">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12">
+            <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-sm">
+                <Image
+                  src="/images/04-horizontal-basic-white.png"
+                  alt="Re:Formd"
+                  width={180}
+                  height={40}
+                />
+                <p className="mt-4 text-sm leading-relaxed text-white/60">
+                  Structured health optimization.{" "}
+                  <span className="text-white/70">Built to Last.</span>
+                </p>
+                <p className="mt-3 text-xs text-white/40">
+                  Biomarkers • Protocols • Tracking • Accountability
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm text-white/60 sm:grid-cols-3 lg:grid-cols-2">
+                {[
+                  "About",
+                  "Research & Methodology",
+                  "Ethics",
+                  "Privacy Policy",
+                  "Terms of Service",
+                  "Contact",
+                ].map((item) => (
+                  <div key={item} className="cursor-default text-white/60">
+                    {item}
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* FOOTER */}
-      <footer className="border-t border-white/10 bg-black">
-        <div className="mx-auto max-w-6xl px-6 py-12">
-          <div className="grid gap-3 text-sm text-white/60 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              "About",
-              "Health Optimization Framework",
-              "Biomarker Tracking",
-              "Hormone Optimization",
-              "Research & Methodology",
-              "Ethics",
-              "Privacy Policy",
-              "Terms of Service",
-            ].map((x) => (
-              <div key={x} className="py-1">
-                {x}
-              </div>
-            ))}
+            <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-white/40">
+                © {year} Re:Formd. All rights reserved.
+              </p>
+              <p className="text-xs text-white/40">
+                Built for performance-minded adults. Not medical advice.
+              </p>
+            </div>
           </div>
-
-          <div className="mt-10 text-xs text-white/40">
-            © {year} Re:Formd. All rights reserved.
-          </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }
