@@ -5,20 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function HomePage() {
-  const [email, setEmail] = useState("");
   const [toast, setToast] = useState<string | null>(null);
 
   const year = useMemo(() => new Date().getFullYear(), []);
 
   function onJoinWaitlist() {
-    const trimmed = email.trim();
-    const subject = encodeURIComponent("Re:Formd Waitlist");
-    const body = encodeURIComponent(
-      `Please add me to the Re:Formd waitlist.\n\nEmail: ${trimmed || "(not provided)"}\n`,
-    );
-    window.location.href = `mailto:waitlist@getreformd.com?subject=${subject}&body=${body}`;
-    setToast("Opening your email client to join the waitlist.");
-    setTimeout(() => setToast(null), 3500);
+    // Placeholder for future DB-backed form (we'll wire this up next)
+    setToast("Waitlist form coming next — wiring to DB.");
+    setTimeout(() => setToast(null), 2500);
   }
 
   return (
@@ -54,7 +48,14 @@ export default function HomePage() {
               backgroundImage: "url(/images/reformd-hero-v3-1920x1080.webp)",
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-black/10" />
+
+          {/* Mobile: darker overall overlay */}
+          <div className="absolute inset-0 bg-black/85 sm:hidden" />
+
+          {/* Desktop+: directional overlay (keep phone visible) */}
+          <div className="absolute inset-0 hidden sm:block bg-gradient-to-r from-black/80 via-black/45 to-black/10" />
+
+          {/* Bottom fade (all sizes) */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/55" />
 
           <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-center px-4 sm:px-6 py-12 sm:py-16">
@@ -80,32 +81,26 @@ export default function HomePage() {
                 Years of stress. Poor recovery. Neglect.
                 <br />
                 <br />
-                <span className=" text-white/80 font-semibold">
+                <span className="text-white/80 font-semibold">
                   Fix the machine to relieve the symptoms.
                 </span>
               </p>
 
-              {/* WAITLIST */}
+              {/* WAITLIST (button-only for now) */}
               <div
                 id="waitlist"
-                className="mt-7 sm:mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
+                className="mt-7 sm:mt-8 flex flex-col sm:flex-row sm:items-center gap-3"
               >
-                <div className="flex w-full max-w-md items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2">
-                  <input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email address"
-                    className="w-full bg-transparent text-sm text-white placeholder:text-white/40 outline-none"
-                    type="email"
-                  />
-                </div>
-
                 <button
                   onClick={onJoinWaitlist}
-                  className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
+                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
                 >
                   JOIN THE WAITLIST
                 </button>
+
+                <p className="text-xs text-white/50">
+                  Next: clean branded form → submits to DB.
+                </p>
               </div>
 
               <p className="mt-5 sm:mt-6 text-sm leading-relaxed text-white/60">
@@ -127,7 +122,7 @@ export default function HomePage() {
         {/* SECTION 2 — EMOTIONAL / YOU'RE NOT BROKEN */}
         <section
           id="problem"
-          className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24"
+          className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24 overflow-hidden"
         >
           <div className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute inset-0 bg-black" />
@@ -166,7 +161,7 @@ export default function HomePage() {
 
                 <ul className="mt-5 space-y-3 max-w-md">
                   {[
-                    "Chromic Pain",
+                    "Chronic Pain",
                     "No Energy",
                     "Foggy Thinking",
                     "No Drive",
@@ -311,23 +306,17 @@ export default function HomePage() {
             <p className="mt-3 text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-white">
               Re:Formd rebuilds the system.
             </p>
-            <span className=" font-semibold">
-              we identify the breakdowns — then rebuild with personalized
-              protocols
-            </span>
-            {/* <div className="text-xs uppercase tracking-[0.3em] text-white/40">
-              The Re:Formd Standard
-            </div>
-            <div className="mt-3 text-base font-semibold tracking-tight text-white">
-              Built to Last
-            </div> */}
+            <p className="mt-3 text-sm sm:text-base text-white/60">
+              We identify the breakdowns — then rebuild with personalized
+              protocols.
+            </p>
           </div>
         </section>
 
         {/* SECTION 3 — THE RE:FORMD SYSTEM */}
         <section
           id="method"
-          className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24"
+          className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24 overflow-hidden"
         >
           <div className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute inset-0 bg-black" />
@@ -347,7 +336,8 @@ export default function HomePage() {
                 protocols, accountability, and measurable outcomes.
               </p>
             </div>
-            {/* SECTION 3 — THE STEPS */}
+
+            {/* Steps */}
             <div className="mt-12 space-y-6">
               {[
                 {
@@ -375,7 +365,7 @@ export default function HomePage() {
                   title: "Adapt",
                   desc: "Recalibrate inputs until performance holds.",
                 },
-              ].map((s, i) => (
+              ].map((s) => (
                 <div
                   key={s.k}
                   className={`relative rounded-2xl border ${
@@ -384,7 +374,6 @@ export default function HomePage() {
                       : "border-white/10 bg-black/30"
                   } p-6`}
                 >
-                  {/* Large ghost step number */}
                   <div
                     className={`absolute top-4 right-6 text-7xl font-bold tracking-tight ${
                       s.k === "01" ? "text-white/25" : "text-white/15"
@@ -393,7 +382,6 @@ export default function HomePage() {
                     {s.k}
                   </div>
 
-                  {/* Step Heading */}
                   <div className="relative">
                     <div
                       className={`text-xs uppercase tracking-[0.3em] ${
@@ -444,7 +432,7 @@ export default function HomePage() {
         {/* SECTION 4 — TRACK */}
         <section
           id="track"
-          className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24"
+          className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24 overflow-hidden"
         >
           <div className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute inset-0 bg-black" />
@@ -487,7 +475,6 @@ export default function HomePage() {
 
             {/* RIGHT: SCORECARD  */}
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8">
-              {/* Header */}
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold tracking-wide text-white/70">
                   DAILY SCORECARD
@@ -544,7 +531,6 @@ export default function HomePage() {
 
                 return (
                   <>
-                    {/* My Daily System Score */}
                     <div className="mt-6 rounded-xl border border-white/10 bg-black/30 p-5">
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-white/60">
@@ -574,7 +560,6 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* Metrics grid */}
                     <div className="mt-6 grid gap-4 sm:grid-cols-2">
                       {metrics.map((m) => (
                         <div
@@ -601,7 +586,6 @@ export default function HomePage() {
                       ))}
                     </div>
 
-                    {/* Insight block */}
                     <div className="mt-6 rounded-xl border border-white/10 bg-black/40 p-5">
                       <div className="text-xs uppercase tracking-widest text-white/40 font-semibold">
                         Daily Insight
@@ -622,7 +606,7 @@ export default function HomePage() {
         {/* SECTION 5 — ADAPT */}
         <section
           id="adapt"
-          className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24"
+          className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24 overflow-hidden"
         >
           <div className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute inset-0 bg-black" />
@@ -665,7 +649,6 @@ export default function HomePage() {
 
             {/* RIGHT: FEEDBACK LOOP */}
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8">
-              {/* Header */}
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold tracking-wide text-white/70">
                   FEEDBACK LOOP
@@ -676,7 +659,6 @@ export default function HomePage() {
               </div>
 
               <div className="mt-8 relative">
-                {/* Vertical connector line */}
                 <div className="absolute left-2 top-1 bottom-1 w-px bg-white/15" />
 
                 <div className="space-y-6">
@@ -688,10 +670,7 @@ export default function HomePage() {
                     { t: "Re-score", d: "Confirm measurable improvement" },
                   ].map((step) => (
                     <div key={step.t} className="relative pl-6">
-                      {/* Dot */}
                       <div className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-white/60" />
-
-                      {/* Text */}
                       <div>
                         <div className="text-sm font-semibold text-white/85">
                           {step.t}
@@ -705,14 +684,12 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Loop Close */}
               <div className="mt-8 flex items-center justify-center gap-2 text-xs text-white/50">
                 <span>Repeat</span>
                 <span className="text-white/30">↺</span>
                 <span>Until stable</span>
               </div>
 
-              {/* Insight */}
               <div className="mt-6">
                 <p className="text-sm leading-relaxed text-white/60">
                   Measure → adjust → repeat. Systems improve because they’re
@@ -734,7 +711,6 @@ export default function HomePage() {
           </div>
 
           <div className="mx-auto max-w-3xl">
-            {/* Emotional Lead */}
             <p className="text-2xl sm:text-3xl md:text-4xl font-light text-white/70">
               You’re not broken.
             </p>
@@ -742,7 +718,6 @@ export default function HomePage() {
               You just need a system.
             </p>
 
-            {/* Decision Line */}
             <h2 className="mt-10 text-2xl sm:text-3xl md:text-5xl font-semibold tracking-tight leading-tight">
               Stop guessing.
               <br className="hidden sm:block" />
@@ -751,7 +726,6 @@ export default function HomePage() {
               <span className="text-white">Start rebuilding.</span>
             </h2>
 
-            {/* Single CTA */}
             <div className="mt-12">
               <Link
                 href="#waitlist"
@@ -761,7 +735,6 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* Brand Stamp */}
             <p className="mt-12 text-xs tracking-wide text-white/40">
               Structured health optimization. Built to Last.
             </p>
@@ -772,10 +745,9 @@ export default function HomePage() {
         <footer className="border-t border-white/10 bg-black">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12">
             <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
-              {/* Brand */}
               <div className="max-w-sm">
                 <Image
-                  src="/images/04-horizontal-basic-white.png" // full logo
+                  src="/images/04-horizontal-basic-white.png"
                   alt="Re:Formd"
                   width={180}
                   height={40}
@@ -789,8 +761,6 @@ export default function HomePage() {
                 </p>
               </div>
 
-              {/* Links */}
-              {/* Links */}
               <div className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm text-white/60 sm:grid-cols-3 lg:grid-cols-2">
                 {[
                   "About",
@@ -807,7 +777,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Bottom bar */}
             <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-white/40">
                 © {year} Re:Formd. All rights reserved.
