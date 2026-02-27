@@ -1,78 +1,60 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+export const runtime = "nodejs";
+
 type WaitlistPayload = {
-  email?: string;
-  full_name?: string;
-  goal?: string;
-  biggest_issue?: string;
-  timeframe?: string;
-  notes?: string;
+  email: string;
+  full_name?: string | null;
+  goal?: string | null;
+  biggest_issue?: string | null;
+  timeframe?: string | null;
+  notes?: string | null;
 };
 
-function getEnv(name: string): string | null {
-  const v = process.env[name];
-  if (!v) return null;
-  const t = v.trim();
-  return t.length ? t : null;
+function getSupabaseAdmin() {
+  const url = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url) throw new Error("Missing env SUPABASE_URL");
+  if (!serviceRoleKey) throw new Error("Missing env SUPABASE_SERVICE_ROLE_KEY");
+
+  return createClient(url, serviceRoleKey, {
+    auth: { persistSession: false },
+  });
 }
 
 export async function POST(req: Request) {
   try {
-    const SUPABASE_URL = getEnv("SUPABASE_URL");
-    const SUPABASE_SERVICE_ROLE_KEY = getEnv("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      return NextResponse.json(
-        {
-          error:
-            "Server is missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment variables.",
-        },
-        { status: 500 },
-      );
-    }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-    const body = (await req.json().catch(() => ({}))) as WaitlistPayload;
+    const body = (await req.json()) as Partial<WaitlistPayload>;
 
     const email = (body.email || "").trim().toLowerCase();
     if (!email) {
-      return NextResponse.json(
-        { error: "Email is required." },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Email is required." }, { status: 400 });
     }
 
-    const row = {
+    const supabase = getSupabaseAdmin();
+
+    const payload: WaitlistPayload = {
       email,
-      full_name: (body.full_name || "").trim() || null,
-      goal: (body.goal || "").trim() || null,
-      biggest_issue: (body.biggest_issue || "").trim() || null,
-      timeframe: (body.timeframe || "").trim() || null,
-      notes: (body.notes || "").trim() || null,
+      full_name: body.full_name ?? null,
+      goal: body.goal ?? null,
+      biggest_issue: body.biggest_issue ?? null,
+      timeframe: body.timeframe ?? null,
+      notes: body.notes ?? null,
     };
 
-    // Assumes table: waitlist with unique(email)
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("waitlist")
-      .upsert(row, { onConflict: "email" })
-      .select("email")
-      .maybeSingle();
-
-    // If your project returns conflict errors instead of upsert updating, you can
-    // swap to: insert + handle 23505. But upsert should be clean.
+      .upsert(payload, { onConflict: "email", ignoreDuplicates: false });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(
-      { ok: true, already: !!data, email },
-      { status: 200 },
-    );
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Unknown error";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
