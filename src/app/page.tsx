@@ -1,161 +1,80 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
 
-type ToastType = "success" | "error" | "accent";
+const NAV = [
+  { id: "problem", label: "Problem" },
+  { id: "upstream", label: "Upstream" },
+  { id: "framework", label: "Framework" },
+  { id: "infrastructure", label: "Infrastructure" },
+  { id: "who", label: "Who It’s For" },
+];
+
+function scrollToId(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 export default function HomePage() {
+  const [email, setEmail] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
+
   const year = useMemo(() => new Date().getFullYear(), []);
 
-  const [toast, setToast] = useState<{ msg: string; type: ToastType } | null>(
-    null,
-  );
-  const [waitlistOpen, setWaitlistOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const [form, setForm] = useState({
-    full_name: "",
-    email: "",
-    goal: "",
-    biggest_issue: "",
-    timeframe: "",
-    notes: "",
-    // Honeypot (bots will fill; humans won't see)
-    website: "",
-  });
-
-  function showToast(msg: string, type: ToastType = "success", ms = 3000) {
-    setToast({ msg, type });
-    window.setTimeout(() => setToast(null), ms);
-  }
-
   function onJoinWaitlist() {
-    setWaitlistOpen(true);
+    // Lightweight v1: mailto fallback (swap to real waitlist API later)
+    const trimmed = email.trim();
+    const subject = encodeURIComponent("Re:Formd Waitlist");
+    const body = encodeURIComponent(
+      `Please add me to the Re:Formd waitlist.\n\nEmail: ${trimmed || "(not provided)"}\n`,
+    );
+    window.location.href = `mailto:waitlist@getreformd.com?subject=${subject}&body=${body}`;
+    setToast("Opening your email client to join the waitlist.");
+    setTimeout(() => setToast(null), 3500);
   }
-
-  function closeWaitlist() {
-    setWaitlistOpen(false);
-  }
-
-  async function submitWaitlist() {
-    const email = form.email.trim().toLowerCase();
-
-    // Green accent callout
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-    if (!emailRegex.test(email)) {
-      showToast("Enter a valid email address.", "accent", 2500);
-      return;
-    }
-
-    // Honeypot check (quietly succeed so bots think it worked)
-    if (form.website.trim().length > 0) {
-      closeWaitlist();
-      showToast("You’re in. Welcome to Re:Formd.", "success", 3000);
-      setForm({
-        full_name: "",
-        email: "",
-        goal: "",
-        biggest_issue: "",
-        timeframe: "",
-        notes: "",
-        website: "",
-      });
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          full_name: form.full_name || null,
-          email,
-          goal: form.goal || null,
-          biggest_issue: form.biggest_issue || null,
-          timeframe: form.timeframe || null,
-          notes: form.notes || null,
-          website: form.website || "", // honeypot
-        }),
-      });
-
-      const data: unknown = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const errMsg =
-          typeof data === "object" && data !== null && "error" in data
-            ? String((data as { error?: unknown }).error || "Failed to submit.")
-            : "Failed to submit.";
-        throw new Error(errMsg);
-      }
-
-      closeWaitlist();
-      setForm({
-        full_name: "",
-        email: "",
-        goal: "",
-        biggest_issue: "",
-        timeframe: "",
-        notes: "",
-        website: "",
-      });
-
-      const already =
-        typeof data === "object" && data !== null && "already" in data
-          ? Boolean((data as { already?: unknown }).already)
-          : false;
-
-      showToast(
-        already
-          ? "You’re already on the list."
-          : "You’re in. Welcome to Re:Formd.",
-        "success",
-        3000,
-      );
-    } catch (e) {
-      const msg =
-        e instanceof Error ? e.message : "Something broke. Try again.";
-      showToast(msg, "error", 3200);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  const toastClass =
-    toast?.type === "accent"
-      ? "border-emerald-400/35 bg-emerald-500/15 text-emerald-200"
-      : toast?.type === "error"
-        ? "border-red-400/35 bg-red-500/15 text-red-200"
-        : "border-white/15 bg-black/90 text-white/85";
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden">
-      {/* HEADER */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-white/10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-4">
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/images/04-horizontal-basic-white.png"
-              alt="Re:Formd"
-              width={140}
-              height={32}
-              priority
-            />
-          </Link>
+    <div className="min-h-screen bg-black text-white">
+      {/* Top Nav */}
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full border border-white/15" />
+            <div className="leading-tight">
+              <div className="text-sm tracking-[0.22em] text-white/70">
+                RE:FORMD
+              </div>
+              <div className="text-xs text-white/50">Built to Last</div>
+            </div>
+          </div>
 
-          <button
-            onClick={onJoinWaitlist}
-            className="rounded-xl bg-white px-4 sm:px-6 py-2 text-sm font-semibold text-black transition hover:opacity-90"
-          >
-            Join the Waitlist
-          </button>
+          <nav className="hidden items-center gap-6 md:flex">
+            {NAV.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => scrollToId(n.id)}
+                className="text-sm text-white/70 hover:text-white"
+              >
+                {n.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onJoinWaitlist}
+              className="rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
+            >
+              Join the Waitlist
+            </button>
+          </div>
         </div>
       </header>
 
       {/* HERO */}
-      <section className="relative min-h-[100svh] overflow-hidden pt-20 sm:pt-24">
+      <section className="relative min-h-[100svh] overflow-hidden">
+        {/* Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -163,28 +82,25 @@ export default function HomePage() {
           }}
         />
 
-        {/* Mobile: darker overall overlay */}
-        <div className="absolute inset-0 bg-black/85 sm:hidden" />
+        {/* Directional overlay: dark on left for text, clear on right for phone */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/10" />
 
-        {/* Desktop+: directional overlay */}
-        <div className="absolute inset-0 hidden sm:block bg-gradient-to-r from-black/80 via-black/45 to-black/10" />
+        {/* Subtle bottom fade only */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
 
-        {/* Bottom fade */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/55" />
-
-        <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-center px-4 sm:px-6 py-12 sm:py-16">
+        <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-center px-6 py-20">
           <div className="max-w-2xl">
-            <div className="mb-4 text-[11px] sm:text-xs tracking-[0.24em] text-white/60">
+            <div className="mb-4 text-xs tracking-[0.28em] text-white/70">
               RE:FORMD — THE HUMAN PERFORMANCE SYSTEM
             </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.05] tracking-tight">
+            <h1 className="text-5xl font-bold leading-[1.02] md:text-6xl">
               It’s Not Aging.
               <br />
               It’s Accumulation.
             </h1>
 
-            <p className="mt-5 sm:mt-6 text-base sm:text-lg leading-relaxed text-white/80">
+            <p className="mt-6 text-lg leading-relaxed text-white/80">
               Low energy. Brain fog. Hormone crashes.
               <br />
               Your body isn’t failing.
@@ -192,225 +108,280 @@ export default function HomePage() {
               It’s reacting.
               <br />
               <br />
-              Years of stress. Poor recovery. Neglect.
+              Years of stress. Poor recovery. Inflammation. Neglect.
               <br />
+              Fix the machine.
               <br />
-              <span className="text-white/80 font-semibold">
-                Fix the machine to relieve the symptoms.
-              </span>
+              Relieve the symptoms.
             </p>
 
-            {/* Waitlist button */}
-            <div className="mt-7 sm:mt-8">
+            <p className="mt-6 text-sm leading-relaxed text-white/60">
+              A structured health optimization platform built on biomarker
+              tracking, hormone optimization, and data-driven performance
+              systems.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex w-full max-w-md items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 backdrop-blur">
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email address"
+                  className="w-full bg-transparent text-sm text-white placeholder:text-white/40 outline-none"
+                  type="email"
+                />
+              </div>
+
               <button
                 onClick={onJoinWaitlist}
-                className="w-full sm:w-auto inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
+                className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
               >
                 JOIN THE WAITLIST
               </button>
-              <p className="mt-3 text-xs text-white/50">
-                Early access invites. No spam.
-              </p>
+
+              {/* <button
+                onClick={() => scrollToId("framework")}
+                className="rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/40"
+              >
+                SEE THE FRAMEWORK
+              </button> */}
             </div>
 
-            <p className="mt-5 sm:mt-6 text-sm leading-relaxed text-white/60">
-              Re:Formd is an AI-driven health optimization system that analyzes
-              your biology, identifies breakdowns in performance pathways, and
-              rebuilds them with structured, accountable, data-backed protocols.
+            <div className="mt-6 text-sm text-white/60">
+              Built for people done guessing.
+            </div>
+          </div>
+        </div>
+
+        {toast && (
+          <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border border-white/15 bg-black/90 px-4 py-2 text-sm text-white/80 backdrop-blur">
+            {toast}
+          </div>
+        )}
+      </section>
+
+      {/* SECTION 2 — THE PROBLEM */}
+      <section id="problem" className="mx-auto max-w-6xl px-6 py-24">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-3xl font-semibold md:text-4xl">
+            You’re Not Broken.
+          </h2>
+          <div className="mt-8 space-y-3 text-lg text-white/80">
+            <div>You train harder.</div>
+            <div>You sleep less.</div>
+            <div>You push through.</div>
+            <div className="pt-6 text-white/70">Now you feel:</div>
+          </div>
+
+          <ul className="mx-auto mt-6 flex max-w-xl flex-col gap-2 text-lg text-white/80">
+            {["Slower", "Foggy", "Inflamed", "Drained"].map((x) => (
+              <li
+                key={x}
+                className="rounded-xl border border-white/10 bg-white/5 px-5 py-3"
+              >
+                {x}
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-10 text-lg leading-relaxed text-white/80">
+            That’s not age.
+            <br />
+            That’s a system under strain.
+          </p>
+
+          <p className="mt-6 text-lg leading-relaxed text-white/70">
+            Most solutions patch symptoms.
+            <br />
+            <span className="text-white">Re:Formd rebuilds the system.</span>
+          </p>
+        </div>
+      </section>
+
+      {/* SECTION 3 — UPSTREAM HEALTH */}
+      <section
+        id="upstream"
+        className="border-y border-white/10 bg-white/[0.03]"
+      >
+        <div className="mx-auto max-w-6xl px-6 py-24">
+          <div className="max-w-3xl">
+            <h2 className="text-3xl font-semibold md:text-4xl">
+              Fix the Root.
+            </h2>
+            <p className="mt-8 text-lg leading-relaxed text-white/80">
+              Energy, recovery, hormone balance, inflammation, metabolic health
+              — they are connected.
+            </p>
+            <p className="mt-6 text-lg leading-relaxed text-white/80">
+              We use structured assessment and biomarker tracking to identify
+              upstream drivers and correct them.
+            </p>
+            <div className="mt-10 space-y-2 text-lg text-white/70">
+              <div>No hacks.</div>
+              <div>No surface fixes.</div>
+              <div>Data-driven longevity.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 4 — THE FRAMEWORK */}
+      <section id="framework" className="mx-auto max-w-6xl px-6 py-24">
+        <h2 className="text-3xl font-semibold md:text-4xl">
+          Diagnose. Explain. Optimize. Track. Adapt.
+        </h2>
+
+        <div className="mt-12 grid gap-4 md:grid-cols-5">
+          {[
+            {
+              t: "Diagnose",
+              b: "Know your baseline. Biomarkers. Performance inputs.",
+            },
+            { t: "Explain", b: "Identify upstream bottlenecks." },
+            {
+              t: "Optimize",
+              b: "Structured protocols across training, recovery, nutrition, and hormone optimization.",
+            },
+            {
+              t: "Track",
+              b: "Daily performance scoring and measurable change.",
+            },
+            { t: "Adapt", b: "Refine based on real data." },
+          ].map((x) => (
+            <div
+              key={x.t}
+              className="rounded-2xl border border-white/10 bg-white/5 p-5"
+            >
+              <div className="text-sm tracking-[0.22em] text-white/60">
+                {x.t.toUpperCase()}
+              </div>
+              <div className="mt-3 text-base leading-relaxed text-white/85">
+                {x.b}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-10 text-lg text-white/70">
+          No guessing.
+          <br />
+          No biohacking roulette.
+        </div>
+      </section>
+
+      {/* SECTION 5 — INFRASTRUCTURE */}
+      <section
+        id="infrastructure"
+        className="border-y border-white/10 bg-white/[0.03]"
+      >
+        <div className="mx-auto max-w-6xl px-6 py-24">
+          <div className="max-w-3xl">
+            <h2 className="text-3xl font-semibold md:text-4xl">
+              This Isn’t Wellness.
+            </h2>
+            <p className="mt-8 text-lg leading-relaxed text-white/80">
+              It’s infrastructure.
+            </p>
+            <p className="mt-6 text-lg leading-relaxed text-white/80">
+              A health optimization platform designed for measurable
+              performance.
+            </p>
+
+            <ul className="mt-10 grid gap-3 sm:grid-cols-2">
+              {[
+                "Biomarker tracking",
+                "Hormone optimization",
+                "Structured protocols",
+                "Performance analytics",
+                "Longevity modeling",
+              ].map((x) => (
+                <li
+                  key={x}
+                  className="rounded-xl border border-white/10 bg-black/30 px-5 py-3 text-white/80"
+                >
+                  {x}
+                </li>
+              ))}
+            </ul>
+
+            <p className="mt-10 text-lg leading-relaxed text-white/70">
+              Built for long-term function — not short-term hype.
             </p>
           </div>
         </div>
       </section>
 
-      {/* WAITLIST MODAL */}
-      {waitlistOpen && (
-        <div className="fixed inset-0 z-[60]">
-          {/* Backdrop */}
-          <button
-            onClick={closeWaitlist}
-            className="absolute inset-0 bg-black/70"
-            aria-label="Close waitlist modal"
-          />
+      {/* SECTION 6 — WHO IT’S FOR */}
+      <section id="who" className="mx-auto max-w-6xl px-6 py-24">
+        <h2 className="text-3xl font-semibold md:text-4xl">
+          Built for People Who Refuse to Drift.
+        </h2>
 
-          {/* Modal */}
-          <div
-            className="absolute left-1/2 top-1/2 w-[94%] max-w-xl -translate-x-1/2 -translate-y-1/2 rounded-[28px] border border-black/10 bg-white p-6 sm:p-8 shadow-2xl"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Join the waitlist"
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-6">
-              <div className="flex items-start gap-3">
-                <Image
-                  src="/images/01-swirl-black copy.png"
-                  alt="Re:Formd"
-                  width={26}
-                  height={26}
-                />
-                <div>
-                  <div className="text-[11px] uppercase tracking-[0.24em] text-black/45">
-                    Join the Waitlist
-                  </div>
-                  <h3 className="mt-2 text-2xl font-semibold text-black">
-                    Built to Last.
-                  </h3>
-                  <p className="mt-2 text-sm text-black/60">
-                    Email is required. Everything else is optional.
-                  </p>
-                </div>
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {["Entrepreneurs", "Athletes", "Parents", "Leaders"].map((x) => (
+            <div
+              key={x}
+              className="rounded-2xl border border-white/10 bg-white/5 p-6"
+            >
+              <div className="text-lg font-semibold">{x}</div>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-10 text-lg leading-relaxed text-white/80">
+          If you want your edge back — and proof it’s working — this is your
+          system.
+        </p>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="border-t border-white/10">
+        <div className="mx-auto max-w-6xl px-6 py-24">
+          <div className="max-w-3xl">
+            <h2 className="text-4xl font-semibold leading-tight md:text-5xl">
+              Stop Managing Symptoms.
+              <br />
+              Start Rebuilding the Machine.
+            </h2>
+
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                onClick={onJoinWaitlist}
+                className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-black hover:bg-white/90"
+              >
+                JOIN THE WAITLIST
+              </button>
+              <div className="text-sm text-white/60">
+                Structured health optimization for energy, performance, and
+                longevity.
               </div>
-
-              <button
-                onClick={closeWaitlist}
-                className="text-black/40 hover:text-black/70"
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Fields */}
-            <div className="mt-6 grid gap-3">
-              {/* Honeypot: hidden from humans */}
-              <input
-                value={form.website}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, website: e.target.value }))
-                }
-                tabIndex={-1}
-                autoComplete="off"
-                className="hidden"
-                aria-hidden="true"
-              />
-
-              <input
-                value={form.full_name}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, full_name: e.target.value }))
-                }
-                placeholder="Full name (optional)"
-                className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
-              />
-
-              <input
-                value={form.email}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, email: e.target.value }))
-                }
-                placeholder="Email (required)"
-                type="email"
-                className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
-              />
-
-              <input
-                value={form.goal}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, goal: e.target.value }))
-                }
-                placeholder="Primary goal (optional)"
-                className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
-              />
-
-              <input
-                value={form.biggest_issue}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, biggest_issue: e.target.value }))
-                }
-                placeholder="Biggest bottleneck right now? (optional)"
-                className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
-              />
-
-              <input
-                value={form.timeframe}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, timeframe: e.target.value }))
-                }
-                placeholder="Timeframe (e.g., 30 days / 90 days) (optional)"
-                className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
-              />
-
-              <textarea
-                value={form.notes}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, notes: e.target.value }))
-                }
-                placeholder="Anything else? (optional)"
-                rows={3}
-                className="resize-none rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
-              />
-            </div>
-
-            {/* Footer */}
-            <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-black/45">
-                By submitting, you agree to receive waitlist updates.
-              </p>
-
-              <button
-                onClick={submitWaitlist}
-                disabled={submitting}
-                className="inline-flex items-center justify-center rounded-2xl bg-black px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
-              >
-                {submitting ? "Submitting…" : "Submit"}
-              </button>
             </div>
           </div>
         </div>
-      )}
-
-      {/* TOAST */}
-      {toast && (
-        <div
-          className={`fixed bottom-6 left-1/2 z-[70] -translate-x-1/2 rounded-full border px-4 py-2 text-sm ${toastClass}`}
-        >
-          {toast.msg}
-        </div>
-      )}
+      </section>
 
       {/* FOOTER */}
       <footer className="border-t border-white/10 bg-black">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12">
-          <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-sm">
-              <Image
-                src="/images/04-horizontal-basic-white.png"
-                alt="Re:Formd"
-                width={180}
-                height={40}
-              />
-              <p className="mt-4 text-sm leading-relaxed text-white/60">
-                Structured health optimization.{" "}
-                <span className="text-white/70">Built to Last.</span>
-              </p>
-              <p className="mt-3 text-xs text-white/40">
-                Biomarkers • Protocols • Tracking • Accountability
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm text-white/60 sm:grid-cols-3 lg:grid-cols-2">
-              {[
-                "About",
-                "Research & Methodology",
-                "Ethics",
-                "Privacy Policy",
-                "Terms of Service",
-                "Contact",
-              ].map((item) => (
-                <div key={item} className="cursor-default text-white/60">
-                  {item}
-                </div>
-              ))}
-            </div>
+        <div className="mx-auto max-w-6xl px-6 py-12">
+          <div className="grid gap-3 text-sm text-white/60 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              "About",
+              "Health Optimization Framework",
+              "Biomarker Tracking",
+              "Hormone Optimization",
+              "Research & Methodology",
+              "Ethics",
+              "Privacy Policy",
+              "Terms of Service",
+            ].map((x) => (
+              <div key={x} className="py-1">
+                {x}
+              </div>
+            ))}
           </div>
 
-          <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-white/40">
-              © {year} Re:Formd. All rights reserved.
-            </p>
-            <p className="text-xs text-white/40">
-              Built for performance-minded adults. Not medical advice.
-            </p>
+          <div className="mt-10 text-xs text-white/40">
+            © {year} Re:Formd. All rights reserved.
           </div>
         </div>
       </footer>
