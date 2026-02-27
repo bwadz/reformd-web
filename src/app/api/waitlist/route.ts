@@ -68,6 +68,15 @@ export async function POST(req: Request) {
     const body = (await req.json()) as Partial<WaitlistPayload>;
 
     const email = (body.email || "").trim().toLowerCase();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Invalid email address." },
+        { status: 400 },
+      );
+    }
+
     if (!email) {
       return NextResponse.json(
         { error: "Email is required." },

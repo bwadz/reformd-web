@@ -43,8 +43,10 @@ export default function HomePage() {
     const email = form.email.trim().toLowerCase();
 
     // Green accent callout
-    if (!email) {
-      showToast("Email is required.", "accent", 2500);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+    if (!emailRegex.test(email)) {
+      showToast("Enter a valid email address.", "accent", 2500);
       return;
     }
 
