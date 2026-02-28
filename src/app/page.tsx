@@ -4,16 +4,129 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
-export default function HomePage() {
-  const [toast, setToast] = useState<string | null>(null);
+type ToastType = "success" | "error" | "accent";
 
+export default function HomePage() {
   const year = useMemo(() => new Date().getFullYear(), []);
 
-  function onJoinWaitlist() {
-    // Placeholder for future DB-backed form (we'll wire this up next)
-    setToast("Waitlist form coming next — wiring to DB.");
-    setTimeout(() => setToast(null), 2500);
+  const [toast, setToast] = useState<{ msg: string; type: ToastType } | null>(
+    null,
+  );
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [form, setForm] = useState({
+    full_name: "",
+    email: "",
+    goal: "",
+    biggest_issue: "",
+    timeframe: "",
+    notes: "",
+    // Honeypot (bots will fill; humans won't see)
+    website: "",
+  });
+
+  function showToast(msg: string, type: ToastType = "success", ms = 3000) {
+    setToast({ msg, type });
+    window.setTimeout(() => setToast(null), ms);
   }
+
+  function onJoinWaitlist() {
+    setWaitlistOpen(true);
+  }
+
+  function closeWaitlist() {
+    setWaitlistOpen(false);
+  }
+
+  async function submitWaitlist() {
+    const email = form.email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+    if (!emailRegex.test(email)) {
+      showToast("Enter a valid email address.", "accent", 2500);
+      return;
+    }
+
+    // Honeypot check (quietly succeed so bots think it worked)
+    if (form.website.trim().length > 0) {
+      closeWaitlist();
+      showToast("You’re in. Welcome to Re:Formd.", "success", 3000);
+      setForm({
+        full_name: "",
+        email: "",
+        goal: "",
+        biggest_issue: "",
+        timeframe: "",
+        notes: "",
+        website: "",
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          full_name: form.full_name || null,
+          email,
+          goal: form.goal || null,
+          biggest_issue: form.biggest_issue || null,
+          timeframe: form.timeframe || null,
+          notes: form.notes || null,
+          website: form.website || "", // honeypot
+        }),
+      });
+
+      const data: unknown = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const errMsg =
+          typeof data === "object" && data !== null && "error" in data
+            ? String((data as { error?: unknown }).error || "Failed to submit.")
+            : "Failed to submit.";
+        throw new Error(errMsg);
+      }
+
+      closeWaitlist();
+      setForm({
+        full_name: "",
+        email: "",
+        goal: "",
+        biggest_issue: "",
+        timeframe: "",
+        notes: "",
+        website: "",
+      });
+
+      const already =
+        typeof data === "object" && data !== null && "already" in data
+          ? Boolean((data as { already?: unknown }).already)
+          : false;
+
+      showToast(
+        already
+          ? "You’re already on the list."
+          : "You’re in. Welcome to Re:Formd.",
+        "success",
+        3000,
+      );
+    } catch (e) {
+      const msg =
+        e instanceof Error ? e.message : "Something broke. Try again.";
+      showToast(msg, "error", 3200);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const toastClass =
+    toast?.type === "accent"
+      ? "border-emerald-400/35 bg-emerald-500/15 text-emerald-200"
+      : toast?.type === "error"
+        ? "border-red-400/35 bg-red-500/15 text-red-200"
+        : "border-white/15 bg-black/90 text-white/85";
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
@@ -31,12 +144,12 @@ export default function HomePage() {
               />
             </Link>
 
-            <Link
-              href="#waitlist"
+            <button
+              onClick={onJoinWaitlist}
               className="rounded-xl bg-white px-4 sm:px-6 py-2 text-sm font-semibold text-black transition hover:opacity-90"
             >
               Join the Waitlist
-            </Link>
+            </button>
           </div>
         </header>
 
@@ -107,8 +220,10 @@ export default function HomePage() {
           </div>
 
           {toast && (
-            <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border border-white/15 bg-black/90 px-4 py-2 text-sm text-white/80">
-              {toast}
+            <div
+              className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border px-4 py-2 text-sm ${toastClass}`}
+            >
+              {toast.msg}
             </div>
           )}
         </section>
@@ -721,12 +836,12 @@ export default function HomePage() {
             </h2>
 
             <div className="mt-12">
-              <Link
-                href="#waitlist"
+              <button
+                onClick={onJoinWaitlist}
                 className="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl bg-white px-12 py-4 text-base font-semibold text-black transition hover:opacity-90"
               >
                 Join the Waitlist
-              </Link>
+              </button>
             </div>
 
             <p className="mt-12 text-xs tracking-wide text-white/40">
@@ -736,6 +851,138 @@ export default function HomePage() {
         </section>
 
         {/* FOOTER */}
+        {/* WAITLIST MODAL */}
+        {waitlistOpen && (
+          <div className="fixed inset-0 z-[60]">
+            {/* Backdrop */}
+            <button
+              onClick={closeWaitlist}
+              className="absolute inset-0 bg-black/70"
+              aria-label="Close waitlist modal"
+            />
+
+            {/* Modal */}
+            <div
+              className="absolute left-1/2 top-1/2 w-[92%] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-black/10 bg-white p-6 sm:p-8 text-black shadow-2xl"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Join the waitlist"
+            >
+              <div className="flex items-start justify-between gap-6">
+                <div className="flex items-center gap-3">
+                  <Image
+                    src="/images/01-swirl-black copy.png"
+                    alt="Re:Formd"
+                    width={28}
+                    height={28}
+                  />
+                  <div>
+                    <div className="text-xs uppercase tracking-widest text-black/50">
+                      Join the Waitlist
+                    </div>
+                    <h3 className="mt-1 text-2xl font-semibold text-black">
+                      Built to Last.
+                    </h3>
+                    <p className="mt-2 text-sm text-black/60">
+                      Email is required. Everything else is optional.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={closeWaitlist}
+                  className="rounded-full px-2 py-1 text-black/50 hover:text-black"
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="mt-6 grid gap-3">
+                <input
+                  value={form.full_name}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, full_name: e.target.value }))
+                  }
+                  placeholder="Full name (optional)"
+                  className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
+                />
+
+                <input
+                  value={form.email}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, email: e.target.value }))
+                  }
+                  placeholder="Email (required)"
+                  type="email"
+                  className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
+                />
+
+                <input
+                  value={form.goal}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, goal: e.target.value }))
+                  }
+                  placeholder="Primary goal (optional)"
+                  className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
+                />
+
+                <input
+                  value={form.biggest_issue}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, biggest_issue: e.target.value }))
+                  }
+                  placeholder="Biggest bottleneck right now? (optional)"
+                  className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
+                />
+
+                <input
+                  value={form.timeframe}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, timeframe: e.target.value }))
+                  }
+                  placeholder="Timeframe (e.g., 30 days / 90 days) (optional)"
+                  className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
+                />
+
+                <textarea
+                  value={form.notes}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, notes: e.target.value }))
+                  }
+                  placeholder="Anything else? (optional)"
+                  rows={3}
+                  className="resize-none rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
+                />
+
+                {/* Honeypot field (hidden) */}
+                <input
+                  value={form.website}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, website: e.target.value }))
+                  }
+                  tabIndex={-1}
+                  autoComplete="off"
+                  className="hidden"
+                />
+              </div>
+
+              <div className="mt-6 flex items-center justify-between gap-4">
+                <p className="text-xs text-black/50">
+                  By submitting, you agree to receive waitlist updates.
+                </p>
+
+                <button
+                  onClick={submitWaitlist}
+                  disabled={submitting}
+                  className="rounded-2xl bg-black px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                >
+                  {submitting ? "Submitting…" : "Submit"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <footer className="border-t border-white/10 bg-black">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12">
             <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
