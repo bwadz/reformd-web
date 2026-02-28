@@ -611,7 +611,7 @@ export default function HomePage() {
         >
           <div className="absolute inset-0 bg-black/70" />
 
-          <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-black/10 bg-white text-black shadow-2xl">
+          <div className="relative w-full max-w-2xl rounded-3xl border border-black/10 bg-white text-black shadow-2xl max-h-[90svh] flex flex-col">
             {/* TOP: Brand */}
             <div className="flex items-center justify-between gap-4 border-b border-black/10 px-6 py-5 sm:px-8">
               <div className="flex items-center gap-3">
@@ -660,7 +660,7 @@ export default function HomePage() {
                     : "That doesn’t look like a real email — fix it to continue.";
 
               return (
-                <div className="px-6 py-6 sm:px-8 sm:py-7">
+                <div className="px-6 py-6 sm:px-8 sm:py-7 overflow-y-auto overscroll-contain flex-1">
                   {/* REQUIRED */}
                   <div>
                     <div className="text-[13px] font-extrabold tracking-[0.22em] text-black/75">
