@@ -1,4 +1,3 @@
-// src/app/api/waitlist/route.ts
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
@@ -6,14 +5,6 @@ import { Resend } from "resend";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-/**
- * Expectation (DB columns):
- * - waitlist.email (unique)
- * - full_name, age_bracket, gender, goal, biggest_issue, timeframe, notes
- * - source, landing_url, referrer, utm_source, utm_medium, utm_campaign, utm_content, utm_term
- * - verification_token_hash, verification_expires_at, verified_at
- */
 
 type WaitlistPayload = {
   email: string;
@@ -26,11 +17,10 @@ type WaitlistPayload = {
   timeframe?: string | null;
   notes?: string | null;
 
-  // honeypot
+  // anti-spam
   website?: string | null;
 
   // attribution
-  source?: string | null;
   landing_url?: string | null;
   referrer?: string | null;
   utm_source?: string | null;
@@ -40,7 +30,6 @@ type WaitlistPayload = {
   utm_term?: string | null;
 };
 
-// super-light in-memory rate limit (per lambda instance)
 const RATE_WINDOW_MS = 60_000;
 const RATE_MAX = 8;
 const rateMap = new Map<string, { count: number; resetAt: number }>();
@@ -56,6 +45,7 @@ function rateLimit(ip: string | null) {
   }
 
   if (cur.count >= RATE_MAX) return { ok: false };
+
   cur.count += 1;
   rateMap.set(ip, cur);
   return { ok: true };
@@ -86,11 +76,9 @@ function isValidEmail(email: string) {
 }
 
 function getSiteUrl(req: Request) {
-  // Best: set NEXT_PUBLIC_SITE_URL in Vercel env to https://www.getreformd.com
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (envUrl) return envUrl.replace(/\/+$/, "");
 
-  // Fallback: infer from request
   const url = new URL(req.url);
   return url.origin;
 }
@@ -116,14 +104,38 @@ function renderEmailHtml(verifyLink: string) {
   </div>`;
 }
 
-export async function GET() {
-  return NextResponse.json({ ok: true, route: "waitlist" }, { status: 200 });
+type ResendSendResult = {
+  data?: { id?: string };
+  error?: { message?: string };
+};
+
+function normalizeResendResult(resp: unknown): ResendSendResult {
+  if (typeof resp !== "object" || resp === null) return {};
+  const o = resp as Record<string, unknown>;
+
+  const dataVal = o["data"];
+  const errorVal = o["error"];
+
+  const out: ResendSendResult = {};
+
+  if (typeof dataVal === "object" && dataVal !== null) {
+    const d = dataVal as Record<string, unknown>;
+    out.data = { id: typeof d["id"] === "string" ? d["id"] : undefined };
+  }
+
+  if (typeof errorVal === "object" && errorVal !== null) {
+    const e = errorVal as Record<string, unknown>;
+    out.error = {
+      message: typeof e["message"] === "string" ? e["message"] : undefined,
+    };
+  }
+
+  return out;
 }
 
 export async function POST(req: Request) {
-  const ip = getClientIp(req);
-
   try {
+    const ip = getClientIp(req);
     if (!rateLimit(ip).ok) {
       return NextResponse.json(
         { error: "Too many requests. Try again shortly." },
@@ -134,7 +146,6 @@ export async function POST(req: Request) {
     const body = (await req.json()) as Partial<WaitlistPayload>;
 
     const email = (body.email || "").trim().toLowerCase();
-
     if (!email) {
       return NextResponse.json(
         { error: "Email is required." },
@@ -148,7 +159,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Honeypot: quietly succeed (don’t store, don’t email)
+    // Honeypot: silently succeed
     const hp = (body.website || "").trim();
     if (hp.length > 0) {
       return NextResponse.json(
@@ -157,24 +168,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Log env + request context per-hit (this matters on Vercel)
-    console.log("WAITLIST POST", {
-      ip,
-      email,
-      host: req.headers.get("host"),
-      origin: req.headers.get("origin"),
-      referer: req.headers.get("referer"),
-      siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
-      hasResendKey: Boolean(process.env.RESEND_API_KEY),
-      resendKeyPrefix: process.env.RESEND_API_KEY?.slice(0, 8),
-      resendFrom: process.env.RESEND_FROM,
-      hasSupabaseUrl: Boolean(process.env.SUPABASE_URL),
-      hasServiceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
-    });
-
     const supabase = getSupabaseAdmin();
 
-    // Check existing (so we can avoid re-emailing verified addresses)
+    // check existing + verified
     const { data: existing, error: selErr } = await supabase
       .from("waitlist")
       .select("email, verified_at")
@@ -182,113 +178,105 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (selErr) {
-      console.error("WAITLIST SELECT ERROR", selErr);
       return NextResponse.json({ error: selErr.message }, { status: 500 });
     }
 
     const already = Boolean(existing?.email);
     const alreadyVerified = Boolean(existing?.verified_at);
 
-    // Generate verification token + hash + expiry (always refresh token unless already verified)
+    // token for new verify link (even if "already" exists but not verified)
     const token = crypto.randomBytes(32).toString("hex");
     const tokenHash = sha256Hex(token);
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    // Build DB payload (only columns that exist in your screenshot + verification fields)
     const payload: Record<string, unknown> = {
       email,
       full_name: body.full_name ?? null,
       age_bracket: body.age_bracket ?? null,
       gender: body.gender ?? null,
-
       goal: body.goal ?? null,
       biggest_issue: body.biggest_issue ?? null,
       timeframe: body.timeframe ?? null,
       notes: body.notes ?? null,
 
-      source:
-        body.source ??
-        req.headers.get("host") ??
-        req.headers.get("origin") ??
-        null,
-
       landing_url: body.landing_url ?? null,
-      referrer: body.referrer ?? req.headers.get("referer") ?? null,
+      referrer: body.referrer ?? null,
       utm_source: body.utm_source ?? null,
       utm_medium: body.utm_medium ?? null,
       utm_campaign: body.utm_campaign ?? null,
       utm_content: body.utm_content ?? null,
       utm_term: body.utm_term ?? null,
+
+      verification_token_hash: tokenHash,
+      verification_expires_at: expiresAt,
     };
 
-    if (!alreadyVerified) {
-      payload.verification_token_hash = tokenHash;
-      payload.verification_expires_at = expiresAt;
-      // do NOT set verified_at here
-    }
-
-    // Upsert
     const { error: upErr } = await supabase
       .from("waitlist")
       .upsert(payload, { onConflict: "email", ignoreDuplicates: false });
 
     if (upErr) {
-      console.error("WAITLIST UPSERT ERROR", upErr);
       return NextResponse.json({ error: upErr.message }, { status: 500 });
     }
 
-    // Send verification email (unless already verified)
-    let email_sent = false;
+    // If already verified, don’t email
+    if (alreadyVerified) {
+      return NextResponse.json(
+        { ok: true, already, email_sent: false, verified: true },
+        { status: 200 },
+      );
+    }
 
-    if (!alreadyVerified) {
-      const resendKey = process.env.RESEND_API_KEY;
-      const from = process.env.RESEND_FROM;
+    const resendKey = process.env.RESEND_API_KEY;
+    const from = process.env.RESEND_FROM;
 
-      if (!resendKey) throw new Error("Missing env RESEND_API_KEY");
-      if (!from) throw new Error("Missing env RESEND_FROM");
+    if (!resendKey) {
+      return NextResponse.json(
+        { error: "Missing env RESEND_API_KEY (production)." },
+        { status: 500 },
+      );
+    }
+    if (!from) {
+      return NextResponse.json(
+        { error: "Missing env RESEND_FROM (production)." },
+        { status: 500 },
+      );
+    }
 
-      const resend = new Resend(resendKey);
-      const verifyLink = makeVerifyLink(req, token);
+    const resend = new Resend(resendKey);
+    const verifyLink = makeVerifyLink(req, token);
 
-      //Send the email and log the response (or error)
-      try {
-        const resp = await resend.emails.send({
-          from,
-          to: email,
-          subject: "Confirm your Re:Formd waitlist spot",
-          html: renderEmailHtml(verifyLink),
-        });
+    const raw = await resend.emails.send({
+      from,
+      to: email,
+      subject: "Confirm your Re:Formd waitlist spot",
+      html: renderEmailHtml(verifyLink),
+    });
 
-        console.log("RESEND RESPONSE", resp);
+    const resp = normalizeResendResult(raw);
 
-        // Narrow safely without `any`
-        if (resp && typeof resp === "object" && "id" in resp) {
-          email_sent = Boolean(resp.id);
-        } else {
-          email_sent = false;
-        }
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          console.error("RESEND ERROR", err.message);
-        } else {
-          console.error("RESEND ERROR", err);
-        }
-        email_sent = false;
-      }
+    // If Resend rejected it, FAIL LOUDLY so you can see why.
+    if (resp.error?.message) {
+      return NextResponse.json(
+        { error: `Resend error: ${resp.error.message}` },
+        { status: 502 },
+      );
+    }
+
+    const sentId = resp.data?.id;
+    if (!sentId) {
+      return NextResponse.json(
+        { error: "Resend did not return a message id." },
+        { status: 502 },
+      );
     }
 
     return NextResponse.json(
-      {
-        ok: true,
-        already,
-        email_sent,
-        verified: alreadyVerified,
-      },
+      { ok: true, already, email_sent: true, verified: false },
       { status: 200 },
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("WAITLIST FATAL", { ip, message });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
