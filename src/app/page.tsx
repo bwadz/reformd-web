@@ -41,7 +41,6 @@ export default function HomePage() {
 
   async function submitWaitlist() {
     const email = form.email.trim().toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
     if (!emailRegex.test(email)) {
       showToast("Enter a valid email address.", "accent", 2500);
