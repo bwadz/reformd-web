@@ -2,61 +2,70 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 
-export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-function sha256Hex(input: string) {
-  return crypto.createHash("sha256").update(input).digest("hex");
+export async function GET() {
+  return new Response("GET alive", { status: 200 });
 }
 
-function getSupabaseAdmin() {
-  const url = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url) throw new Error("Missing env SUPABASE_URL");
-  if (!serviceRoleKey) throw new Error("Missing env SUPABASE_SERVICE_ROLE_KEY");
-
-  return createClient(url, serviceRoleKey, { auth: { persistSession: false } });
+export async function POST(req: Request) {
+  console.log("POST HIT");
+  return new Response("POST alive", { status: 200 });
 }
 
-function getSiteUrl(req: Request) {
-  const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (envUrl) return envUrl.replace(/\/+$/, "");
-  return new URL(req.url).origin;
-}
+// function sha256Hex(input: string) {
+//   return crypto.createHash("sha256").update(input).digest("hex");
+// }
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const token = (url.searchParams.get("token") || "").trim();
-  const base = getSiteUrl(req);
+// function getSupabaseAdmin() {
+//   const url = process.env.SUPABASE_URL;
+//   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!token) return NextResponse.redirect(`${base}/?verified=missing`);
+//   if (!url) throw new Error("Missing env SUPABASE_URL");
+//   if (!serviceRoleKey) throw new Error("Missing env SUPABASE_SERVICE_ROLE_KEY");
 
-  const tokenHash = sha256Hex(token);
-  const supabase = getSupabaseAdmin();
-  const nowIso = new Date().toISOString();
+//   return createClient(url, serviceRoleKey, { auth: { persistSession: false } });
+// }
 
-  // Update the matching row if token hash matches and not expired
-  const { data, error } = await supabase
-    .from("waitlist")
-    .update({
-      verified: true, // <-- THIS fixes your "verified=false"
-      verified_at: nowIso,
-      verification_token_hash: null, // optional cleanup
-      verification_expires_at: null, // optional cleanup
-    })
-    .eq("verification_token_hash", tokenHash)
-    .gt("verification_expires_at", nowIso)
-    .select("email")
-    .maybeSingle();
+// function getSiteUrl(req: Request) {
+//   const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+//   if (envUrl) return envUrl.replace(/\/+$/, "");
+//   return new URL(req.url).origin;
+// }
 
-  if (error) {
-    console.error("verify error:", error);
-    return NextResponse.redirect(`${base}/?verified=error`);
-  }
+// export async function GET(req: Request) {
+//   const url = new URL(req.url);
+//   const token = (url.searchParams.get("token") || "").trim();
+//   const base = getSiteUrl(req);
 
-  if (!data?.email) {
-    return NextResponse.redirect(`${base}/?verified=invalid`);
-  }
+//   if (!token) return NextResponse.redirect(`${base}/?verified=missing`);
 
-  return NextResponse.redirect(`${base}/?verified=success`);
-}
+//   const tokenHash = sha256Hex(token);
+//   const supabase = getSupabaseAdmin();
+//   const nowIso = new Date().toISOString();
+
+//   // Update the matching row if token hash matches and not expired
+//   const { data, error } = await supabase
+//     .from("waitlist")
+//     .update({
+//       verified: true, // <-- THIS fixes your "verified=false"
+//       verified_at: nowIso,
+//       verification_token_hash: null, // optional cleanup
+//       verification_expires_at: null, // optional cleanup
+//     })
+//     .eq("verification_token_hash", tokenHash)
+//     .gt("verification_expires_at", nowIso)
+//     .select("email")
+//     .maybeSingle();
+
+//   if (error) {
+//     console.error("verify error:", error);
+//     return NextResponse.redirect(`${base}/?verified=error`);
+//   }
+
+//   if (!data?.email) {
+//     return NextResponse.redirect(`${base}/?verified=invalid`);
+//   }
+
+//   return NextResponse.redirect(`${base}/?verified=success`);
+// }
