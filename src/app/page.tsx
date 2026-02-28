@@ -1,20 +1,77 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
 type ToastType = "success" | "error" | "accent";
 
 type WaitlistForm = {
+  // required
   full_name: string;
   email: string;
-  goal: string;
-  biggest_issue: string;
+  age_bracket: string;
+  gender: string;
+
+  // optional
+  goal: string; // pipe-separated checkbox values
+  biggest_issue: string; // pipe-separated checkbox values
+  notes: string; // pipe-separated checkbox values
   timeframe: string;
-  notes: string;
-  // Honeypot (bots fill; humans never see)
-  website: string;
+
+  // anti-spam
+  website: string; // honeypot
+
+  // attribution
+  landing_url: string;
+  referrer: string;
+  utm_source: string;
+  utm_medium: string;
+  utm_campaign: string;
+  utm_content: string;
+  utm_term: string;
+};
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function isValidEmail(email: string) {
+  return EMAIL_REGEX.test(email.trim().toLowerCase());
+}
+
+function splitPipe(s: string) {
+  return s
+    .split("|")
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+function togglePipeValue(current: string, value: string, checked: boolean) {
+  const set = new Set(splitPipe(current));
+  if (checked) set.add(value);
+  else set.delete(value);
+  return Array.from(set).join(" | ");
+}
+
+const initialForm: WaitlistForm = {
+  full_name: "",
+  email: "",
+  age_bracket: "",
+  gender: "",
+
+  goal: "",
+  biggest_issue: "",
+  notes: "",
+  timeframe: "",
+
+  website: "",
+
+  landing_url: "",
+  referrer: "",
+  utm_source: "",
+  utm_medium: "",
+  utm_campaign: "",
+  utm_content: "",
+  utm_term: "",
 };
 
 export default function HomePage() {
@@ -25,17 +82,27 @@ export default function HomePage() {
   );
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [emailInlineError, setEmailInlineError] = useState("");
 
-  const [form, setForm] = useState<WaitlistForm>({
-    full_name: "",
-    email: "",
-    goal: "",
-    biggest_issue: "",
-    timeframe: "",
-    notes: "",
-    website: "",
-  });
+  const [form, setForm] = useState<WaitlistForm>(initialForm);
+
+  // Populate attribution safely on client after mount
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      setForm((prev) => ({
+        ...prev,
+        landing_url: window.location.href || "",
+        referrer: document.referrer || "",
+        utm_source: sp.get("utm_source") || "",
+        utm_medium: sp.get("utm_medium") || "",
+        utm_campaign: sp.get("utm_campaign") || "",
+        utm_content: sp.get("utm_content") || "",
+        utm_term: sp.get("utm_term") || "",
+      }));
+    } catch {
+      // ignore
+    }
+  }, []);
 
   function showToast(msg: string, type: ToastType = "success", ms = 3000) {
     setToast({ msg, type });
@@ -43,58 +110,49 @@ export default function HomePage() {
   }
 
   function onJoinWaitlist() {
-    setEmailInlineError("");
     setWaitlistOpen(true);
   }
 
   function closeWaitlist() {
     setWaitlistOpen(false);
-    setEmailInlineError("");
-  }
-
-  function updateField<K extends keyof WaitlistForm>(
-    key: K,
-    value: WaitlistForm[K],
-  ) {
-    setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   function resetForm() {
-    setForm({
-      full_name: "",
-      email: "",
-      goal: "",
-      biggest_issue: "",
-      timeframe: "",
-      notes: "",
-      website: "",
-    });
-    setEmailInlineError("");
-  }
-
-  function isValidEmail(email: string) {
-    // Practical validator (not perfect, but solid)
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-    return emailRegex.test(email);
+    // Keep attribution fields (so they survive a submit)
+    setForm((prev) => ({
+      ...initialForm,
+      landing_url: prev.landing_url,
+      referrer: prev.referrer,
+      utm_source: prev.utm_source,
+      utm_medium: prev.utm_medium,
+      utm_campaign: prev.utm_campaign,
+      utm_content: prev.utm_content,
+      utm_term: prev.utm_term,
+    }));
   }
 
   async function submitWaitlist() {
     const email = form.email.trim().toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-    if (!emailRegex.test(email)) {
-      showToast("Enter a valid email address.", "accent", 2500);
+
+    // Required validation
+    if (!form.full_name.trim()) {
+      showToast("Name is required.", "accent", 2500);
       return;
     }
-
-    // Inline validation (green accent)
     if (!email) {
-      setEmailInlineError("Email is required.");
       showToast("Email is required.", "accent", 2500);
       return;
     }
     if (!isValidEmail(email)) {
-      setEmailInlineError("Enter a valid email address.");
       showToast("Enter a valid email address.", "accent", 2500);
+      return;
+    }
+    if (!form.age_bracket) {
+      showToast("Age bracket is required.", "accent", 2500);
+      return;
+    }
+    if (!form.gender) {
+      showToast("Gender is required.", "accent", 2500);
       return;
     }
 
@@ -107,24 +165,36 @@ export default function HomePage() {
     }
 
     setSubmitting(true);
-
     try {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          full_name: form.full_name || null,
+          full_name: form.full_name.trim() || null,
           email,
+          age_bracket: form.age_bracket || null,
+          gender: form.gender || null,
+
           goal: form.goal || null,
           biggest_issue: form.biggest_issue || null,
           timeframe: form.timeframe || null,
           notes: form.notes || null,
+
+          // attribution
+          landing_url: form.landing_url || null,
+          referrer: form.referrer || null,
+          utm_source: form.utm_source || null,
+          utm_medium: form.utm_medium || null,
+          utm_campaign: form.utm_campaign || null,
+          utm_content: form.utm_content || null,
+          utm_term: form.utm_term || null,
+
+          // honeypot
           website: form.website || "",
         }),
       });
 
       const data: unknown = await res.json().catch(() => ({}));
-
       if (!res.ok) {
         const errMsg =
           typeof data === "object" && data !== null && "error" in data
@@ -142,11 +212,9 @@ export default function HomePage() {
       resetForm();
 
       showToast(
-        already
-          ? "You’re already on the list."
-          : "You’re in. Welcome to Re:Formd.",
+        already ? "You’re already on the list." : "Check your email to verify.",
         "success",
-        3000,
+        3200,
       );
     } catch (e) {
       const msg =
@@ -182,6 +250,7 @@ export default function HomePage() {
           <button
             onClick={onJoinWaitlist}
             className="rounded-xl bg-white px-4 sm:px-6 py-2 text-sm font-semibold text-black transition hover:opacity-90"
+            type="button"
           >
             Join the Waitlist
           </button>
@@ -196,14 +265,8 @@ export default function HomePage() {
             backgroundImage: "url(/images/reformd-hero-v3-1920x1080.webp)",
           }}
         />
-
-        {/* Mobile: darker overall overlay */}
         <div className="absolute inset-0 bg-black/85 sm:hidden" />
-
-        {/* Desktop+: directional overlay (keep phone visible) */}
         <div className="absolute inset-0 hidden sm:block bg-gradient-to-r from-black/80 via-black/45 to-black/10" />
-
-        {/* Bottom fade (all sizes) */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/55" />
 
         <div className="relative mx-auto flex min-h-[100svh] max-w-6xl flex-col justify-start sm:justify-center px-4 sm:px-6 pt-8 sm:pt-0 pb-12 sm:py-16">
@@ -230,13 +293,11 @@ export default function HomePage() {
               </span>
             </p>
 
-            <div
-              id="waitlist"
-              className="mt-7 sm:mt-8 flex flex-col sm:flex-row sm:items-center gap-3"
-            >
+            <div className="mt-7 sm:mt-8 flex flex-col sm:flex-row sm:items-center gap-3">
               <button
                 onClick={onJoinWaitlist}
                 className="w-full sm:w-auto inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
+                type="button"
               >
                 JOIN THE WAITLIST
               </button>
@@ -251,7 +312,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 2 — EMOTIONAL / YOU'RE NOT BROKEN */}
+      {/* SECTION 2 (kept as-is from your version) */}
       <section
         id="problem"
         className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24 overflow-hidden"
@@ -262,7 +323,6 @@ export default function HomePage() {
         </div>
 
         <div className="mx-auto grid max-w-5xl items-start gap-10 lg:gap-14 lg:grid-cols-2">
-          {/* LEFT */}
           <div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight">
               You’re Not Broken.
@@ -310,7 +370,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* RIGHT: System Under Strain */}
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8">
             {(() => {
               const categories = [
@@ -440,115 +499,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 3 — THE RE:FORMD SYSTEM */}
-      <section
-        id="method"
-        className="relative mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 lg:py-24 overflow-hidden"
-      >
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-black" />
-          <div className="absolute left-1/2 top-14 h-[360px] w-[760px] -translate-x-1/2 rounded-full bg-gradient-to-r from-white/6 via-white/3 to-transparent blur-3xl" />
-        </div>
-
-        <div className="mx-auto max-w-5xl">
-          <div className="text-center">
-            <div className="text-xs uppercase tracking-widest accent">
-              The System
-            </div>
-            <h2 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight">
-              Diagnose. Explain. Optimize. Track. Adapt.
-            </h2>
-            <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg leading-relaxed text-white/70">
-              A repeatable process for rebuilding performance — with protocols,
-              accountability, and measurable outcomes.
-            </p>
-          </div>
-
-          <div className="mt-12 space-y-6">
-            {[
-              {
-                k: "01",
-                title: "Diagnose",
-                desc: "Baseline the truth. Identify signal before action.",
-              },
-              {
-                k: "02",
-                title: "Explain",
-                desc: "Turn chaos into a clear upstream map.",
-              },
-              {
-                k: "03",
-                title: "Optimize",
-                desc: "Build structured protocols that fit real life.",
-              },
-              {
-                k: "04",
-                title: "Track",
-                desc: "Measure compliance and system responses daily.",
-              },
-              {
-                k: "05",
-                title: "Adapt",
-                desc: "Recalibrate inputs until performance holds.",
-              },
-            ].map((s) => (
-              <div
-                key={s.k}
-                className={`relative rounded-2xl border ${
-                  s.k === "01"
-                    ? "border-white/25 bg-black/40"
-                    : "border-white/10 bg-black/30"
-                } p-6`}
-              >
-                <div
-                  className={`absolute top-4 right-6 text-7xl font-bold tracking-tight ${
-                    s.k === "01" ? "text-white/25" : "text-white/15"
-                  }`}
-                >
-                  {s.k}
-                </div>
-
-                <div className="relative">
-                  <div
-                    className={`text-xs uppercase tracking-[0.3em] ${
-                      s.k === "01" ? "text-white/50" : "text-white/35"
-                    }`}
-                  >
-                    Step {s.k}
-                  </div>
-
-                  <div
-                    className={`mt-3 text-xl font-semibold ${s.k === "01" ? "text-white" : "text-white/85"}`}
-                  >
-                    {s.title}
-                  </div>
-
-                  <p className="mt-2 text-sm leading-relaxed text-white/60 max-w-md">
-                    {s.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mx-auto mt-12 sm:mt-14 max-w-4xl text-center">
-            <div className="text-xs uppercase tracking-[0.3em] accent">
-              The Re:Formd Standard
-            </div>
-            <p className="mt-5 text-xl sm:text-2xl md:text-3xl font-light text-white/70 leading-relaxed">
-              No hacks. No guesswork. No hype.
-            </p>
-            <p className="mt-4 text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-white">
-              Just signal → protocol → accountability → results.
-            </p>
-            <p className="mt-6 text-sm sm:text-base leading-relaxed text-white/60">
-              Diagnose the truth. Build the plan. Track what changes. Adapt
-              until the system holds.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* FINAL CTA */}
       <section
         id="cta"
@@ -579,6 +529,7 @@ export default function HomePage() {
             <button
               onClick={onJoinWaitlist}
               className="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl bg-white px-12 py-4 text-base font-semibold text-black transition hover:opacity-90"
+              type="button"
             >
               Join the Waitlist
             </button>
@@ -641,6 +592,8 @@ export default function HomePage() {
       {toast && (
         <div
           className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border px-4 py-2 text-sm ${toastClass}`}
+          role="status"
+          aria-live="polite"
         >
           {toast.msg}
         </div>
@@ -648,124 +601,349 @@ export default function HomePage() {
 
       {/* WAITLIST MODAL */}
       {waitlistOpen && (
-        <div className="fixed inset-0 z-[60]">
-          <div
-            className="absolute inset-0 bg-black/70"
-            onClick={closeWaitlist}
-          />
-          <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="relative w-full max-w-xl rounded-3xl bg-white text-black shadow-2xl">
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+          aria-modal="true"
+          role="dialog"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeWaitlist();
+          }}
+        >
+          <div className="absolute inset-0 bg-black/70" />
+
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-black/10 bg-white text-black shadow-2xl">
+            {/* TOP: Brand */}
+            <div className="flex items-center justify-between gap-4 border-b border-black/10 px-6 py-5 sm:px-8">
+              <div className="flex items-center gap-3">
+                <Image
+                  src="/images/05-vertical-complete-black.png"
+                  alt="Re:Formd"
+                  width={130}
+                  height={52}
+                  priority
+                />
+              </div>
+
               <button
                 onClick={closeWaitlist}
+                className="rounded-full border border-black/10 bg-white px-3 py-1.5 text-sm text-black/70 hover:bg-black/5"
                 aria-label="Close"
-                className="absolute right-4 top-4 rounded-full p-2 text-black/60 hover:bg-black/5"
+                type="button"
               >
                 ✕
               </button>
-
-              <div className="px-6 sm:px-8 pt-10 pb-8">
-                <div className="flex items-start gap-3">
-                  <Image
-                    src="/images/01-swirl-black copy.png"
-                    alt="Re:Formd"
-                    width={28}
-                    height={28}
-                  />
-                  <div>
-                    <div className="text-[11px] tracking-[0.24em] text-black/50">
-                      JOIN THE WAITLIST
-                    </div>
-                    <div className="mt-2 text-3xl font-semibold">
-                      Built to Last.
-                    </div>
-                    <div className="mt-2 text-sm text-black/60">
-                      Email is required. Everything else is optional.
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-8 space-y-3">
-                  <input
-                    value={form.full_name}
-                    onChange={(e) => updateField("full_name", e.target.value)}
-                    placeholder="Full name (optional)"
-                    className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
-                  />
-
-                  <div>
-                    <input
-                      value={form.email}
-                      onChange={(e) => {
-                        setEmailInlineError("");
-                        updateField("email", e.target.value);
-                      }}
-                      placeholder="Email (required)"
-                      className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
-                    />
-                    {emailInlineError && (
-                      <div className="mt-2 text-sm text-emerald-600">
-                        {emailInlineError}
-                      </div>
-                    )}
-                  </div>
-
-                  <input
-                    value={form.goal}
-                    onChange={(e) => updateField("goal", e.target.value)}
-                    placeholder="Primary goal (optional)"
-                    className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
-                  />
-
-                  <input
-                    value={form.biggest_issue}
-                    onChange={(e) =>
-                      updateField("biggest_issue", e.target.value)
-                    }
-                    placeholder="Biggest bottleneck right now? (optional)"
-                    className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
-                  />
-
-                  <input
-                    value={form.timeframe}
-                    onChange={(e) => updateField("timeframe", e.target.value)}
-                    placeholder="Timeframe (e.g., 30 / 90 days) (optional)"
-                    className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
-                  />
-
-                  <textarea
-                    value={form.notes}
-                    onChange={(e) => updateField("notes", e.target.value)}
-                    placeholder="Anything else? (optional)"
-                    rows={3}
-                    className="w-full resize-none rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none ring-0 focus:border-black/25"
-                  />
-
-                  {/* Honeypot */}
-                  <input
-                    value={form.website}
-                    onChange={(e) => updateField("website", e.target.value)}
-                    tabIndex={-1}
-                    autoComplete="off"
-                    className="hidden"
-                    aria-hidden="true"
-                  />
-                </div>
-
-                <div className="mt-6 flex items-center justify-between gap-4">
-                  <div className="text-xs text-black/50">
-                    By submitting, you agree to receive waitlist updates.
-                  </div>
-
-                  <button
-                    onClick={submitWaitlist}
-                    disabled={submitting}
-                    className="rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition hover:bg-black/90 disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {submitting ? "Submitting..." : "Submit"}
-                  </button>
-                </div>
-              </div>
             </div>
+
+            {(() => {
+              const email = form.email.trim().toLowerCase();
+              const emailValid = isValidEmail(email);
+
+              const canSubmit =
+                emailValid &&
+                form.full_name.trim().length > 0 &&
+                form.age_bracket.trim().length > 0 &&
+                form.gender.trim().length > 0 &&
+                !submitting;
+
+              const emailColor =
+                form.email.trim().length === 0
+                  ? "text-black/45"
+                  : emailValid
+                    ? "text-emerald-700"
+                    : "text-red-600";
+
+              const emailHelp =
+                form.email.trim().length === 0
+                  ? "We’ll send a verification link."
+                  : emailValid
+                    ? "Valid email. Ready to send."
+                    : "That doesn’t look like a real email — fix it to continue.";
+
+              return (
+                <div className="px-6 py-6 sm:px-8 sm:py-7">
+                  {/* REQUIRED */}
+                  <div>
+                    <div className="text-[13px] font-extrabold tracking-[0.22em] text-black/75">
+                      REQUIRED DETAILS
+                    </div>
+                    <p className="mt-2 text-xs text-black/55">
+                      You’re not on the list until you confirm via email.
+                    </p>
+
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                      {/* Name */}
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-black/60">
+                          Name <span className="text-red-600">*</span>
+                        </label>
+                        <input
+                          value={form.full_name}
+                          onChange={(e) =>
+                            setForm({ ...form, full_name: e.target.value })
+                          }
+                          className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none focus:border-black/25"
+                          placeholder="Brant"
+                          autoComplete="name"
+                        />
+                        {form.full_name.trim().length === 0 ? (
+                          <div className="mt-2 text-xs font-semibold text-red-600">
+                            Name is required.
+                          </div>
+                        ) : (
+                          <div className="mt-2 text-xs font-semibold text-emerald-700">
+                            Solid. ✅
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Email */}
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-black/60">
+                          Email <span className="text-red-600">*</span>
+                        </label>
+                        <input
+                          value={form.email}
+                          onChange={(e) =>
+                            setForm({ ...form, email: e.target.value })
+                          }
+                          className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/40 outline-none focus:border-black/25"
+                          placeholder="you@domain.com"
+                          autoComplete="email"
+                          inputMode="email"
+                        />
+                        <div
+                          className={`mt-2 text-xs font-semibold ${emailColor}`}
+                        >
+                          {emailHelp}
+                        </div>
+                      </div>
+
+                      {/* Age bracket */}
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-black/60">
+                          Age bracket <span className="text-red-600">*</span>
+                        </label>
+                        <select
+                          value={form.age_bracket}
+                          onChange={(e) =>
+                            setForm({ ...form, age_bracket: e.target.value })
+                          }
+                          className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black outline-none focus:border-black/25"
+                        >
+                          <option value="" disabled>
+                            Select…
+                          </option>
+                          <option value="18-24">18–24</option>
+                          <option value="25-34">25–34</option>
+                          <option value="35-44">35–44</option>
+                          <option value="45-54">45–54</option>
+                          <option value="55-64">55–64</option>
+                          <option value="65+">65+</option>
+                        </select>
+                        {!form.age_bracket ? (
+                          <div className="mt-2 text-xs font-semibold text-red-600">
+                            Age bracket is required.
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {/* Gender */}
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-black/60">
+                          Gender <span className="text-red-600">*</span>
+                        </label>
+                        <select
+                          value={form.gender}
+                          onChange={(e) =>
+                            setForm({ ...form, gender: e.target.value })
+                          }
+                          className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black outline-none focus:border-black/25"
+                        >
+                          <option value="" disabled>
+                            Select…
+                          </option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="nonbinary">Non-binary</option>
+                          <option value="prefer_not_say">
+                            Prefer not to say
+                          </option>
+                        </select>
+                        {!form.gender ? (
+                          <div className="mt-2 text-xs font-semibold text-red-600">
+                            Gender is required.
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* OPTIONAL */}
+                  <div className="mt-7 border-t border-black/10 pt-6">
+                    <div className="text-[13px] font-extrabold tracking-[0.22em] text-black/75">
+                      OPTIONAL DETAILS
+                    </div>
+                    <p className="mt-2 text-xs text-black/55">
+                      Pick what fits. This improves what we send you.
+                    </p>
+
+                    {/* Primary goals */}
+                    <div className="mt-5">
+                      <div className="text-xs font-semibold text-black/60">
+                        Primary goals
+                      </div>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {[
+                          "Lose fat + keep muscle",
+                          "Fix energy + focus",
+                          "Build strength + performance",
+                          "Balance hormones + recovery",
+                          "Improve labs + longevity",
+                          "Build better health habits",
+                        ].map((label) => (
+                          <label
+                            key={label}
+                            className="flex cursor-pointer items-center gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black/75 hover:bg-black/5"
+                          >
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4"
+                              checked={splitPipe(form.goal).includes(label)}
+                              onChange={(e) =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  goal: togglePipeValue(
+                                    prev.goal,
+                                    label,
+                                    e.target.checked,
+                                  ),
+                                }))
+                              }
+                            />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Issues */}
+                    <div className="mt-6">
+                      <div className="text-xs font-semibold text-black/60">
+                        Biggest issues
+                      </div>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {[
+                          "Low energy / fatigue",
+                          "Brain fog / focus",
+                          "Poor sleep",
+                          "Weight gain / stalled",
+                          "Low drive / motivation",
+                          "Chronic aches / inflammation",
+                        ].map((label) => (
+                          <label
+                            key={label}
+                            className="flex cursor-pointer items-center gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black/75 hover:bg-black/5"
+                          >
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4"
+                              checked={splitPipe(form.biggest_issue).includes(
+                                label,
+                              )}
+                              onChange={(e) =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  biggest_issue: togglePipeValue(
+                                    prev.biggest_issue,
+                                    label,
+                                    e.target.checked,
+                                  ),
+                                }))
+                              }
+                            />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Interests */}
+                    <div className="mt-6">
+                      <div className="text-xs font-semibold text-black/60">
+                        Interests
+                      </div>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {[
+                          "Health optimization",
+                          "Diagnosis + biomarkers",
+                          "Tracking + dashboards",
+                          "Education library",
+                          "Coaching + accountability",
+                          "Peptides (research only)",
+                        ].map((label) => (
+                          <label
+                            key={label}
+                            className="flex cursor-pointer items-center gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black/75 hover:bg-black/5"
+                          >
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4"
+                              checked={splitPipe(form.notes).includes(label)}
+                              onChange={(e) =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  notes: togglePipeValue(
+                                    prev.notes,
+                                    label,
+                                    e.target.checked,
+                                  ),
+                                }))
+                              }
+                            />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Footer actions */}
+                    <div className="mt-7 flex flex-col items-center gap-3">
+                      <button
+                        onClick={submitWaitlist}
+                        disabled={!canSubmit}
+                        className={`w-full sm:w-auto rounded-2xl px-10 py-3 text-sm font-semibold transition ${
+                          canSubmit
+                            ? "bg-black text-white hover:opacity-90"
+                            : "bg-black/10 text-black/35 cursor-not-allowed"
+                        }`}
+                        type="button"
+                      >
+                        {submitting
+                          ? "Submitting..."
+                          : "Send verification email"}
+                      </button>
+
+                      <p className="text-center text-xs text-black/55">
+                        We’ll email you a verification link. You’re not added
+                        until you confirm.
+                      </p>
+
+                      {/* honeypot (hidden) */}
+                      <input
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={form.website}
+                        onChange={(e) =>
+                          setForm({ ...form, website: e.target.value })
+                        }
+                        className="hidden"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
