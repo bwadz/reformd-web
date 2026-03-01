@@ -239,7 +239,7 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-4">
           <Link href="/" className="flex items-center">
             <Image
-              src="/images/04-horizontal-basic-white.png"
+              src="/images/04-horizontal-basic-white.svg"
               alt="Re:Formd"
               width={140}
               height={32}
@@ -547,7 +547,7 @@ export default function HomePage() {
           <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-sm">
               <Image
-                src="/images/04-horizontal-basic-white.png"
+                src="/images/04-horizontal-basic-white.svg"
                 alt="Re:Formd"
                 width={180}
                 height={40}
@@ -616,7 +616,7 @@ export default function HomePage() {
             <div className="flex items-center justify-between gap-4 border-b border-black/10 px-6 py-5 sm:px-8">
               <div className="flex items-center gap-3">
                 <Image
-                  src="/images/05-vertical-complete-black.png"
+                  src="/images/05-vertical-complete-black.svg"
                   alt="Re:Formd"
                   width={130}
                   height={52}
