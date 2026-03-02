@@ -1,4 +1,9 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@source "../content";
+@source "../app";
+@source "../components";
 
 html,
 body {
@@ -12,5 +17,48 @@ body {
   /* Accent lime */
   .accent {
     color: #b4f000;
+  }
+}
+
+/* Re:Formd Article Styles */
+@layer components {
+  .rf-article {
+    @apply prose prose-invert max-w-none;
+  }
+
+  .rf-article h1 {
+    @apply tracking-tight;
+  }
+
+  .rf-article h2 {
+    @apply mt-10 mb-4 text-white tracking-tight;
+  }
+
+  .rf-article p {
+    @apply my-5 leading-7 text-white/80;
+  }
+
+  .rf-article ul {
+    @apply my-6;
+  }
+
+  .rf-article li {
+    @apply my-1 text-white/80;
+  }
+
+  .rf-article hr {
+    @apply my-10 border-white/10;
+  }
+
+  .rf-article strong {
+    @apply text-white;
+  }
+
+  .rf-article a {
+    @apply text-white underline underline-offset-4;
+  }
+
+  .rf-article blockquote {
+    @apply border-l border-white/20 text-white/80;
   }
 }
