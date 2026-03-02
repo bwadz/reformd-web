@@ -7,10 +7,30 @@ const INSIGHTS_DIR = path.join(process.cwd(), "src", "content", "insights");
 export type InsightMeta = {
   slug: string;
   title: string;
-  description: string;
-  date: string;
-  tags: string[];
+  description?: string;
+  date?: string; // YYYY-MM-DD
+  tags?: string[];
+  image?: string; // ✅ add thumbnail support
 };
+
+export type InsightPost = {
+  meta: InsightMeta;
+  content: string;
+};
+
+function normalizeMeta(
+  slug: string,
+  data: Record<string, unknown>,
+): InsightMeta {
+  return {
+    slug,
+    title: String(data.title ?? slug),
+    description: data.description ? String(data.description) : undefined,
+    date: data.date ? String(data.date) : undefined,
+    tags: Array.isArray(data.tags) ? data.tags.map(String) : undefined,
+    image: data.image ? String(data.image) : undefined,
+  };
+}
 
 export function getAllInsights(): InsightMeta[] {
   const files = fs.readdirSync(INSIGHTS_DIR).filter((f) => f.endsWith(".mdx"));
@@ -23,26 +43,18 @@ export function getAllInsights(): InsightMeta[] {
     const raw = fs.readFileSync(fullPath, "utf8");
     const { data } = matter(raw);
 
-    return {
-      slug,
-      title: String(data.title ?? slug),
-      description: String(data.description ?? ""),
-      date: String(data.date ?? ""),
-      tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
-    };
+    return normalizeMeta(slug, data as Record<string, unknown>);
   });
 
   // newest first (YYYY-MM-DD sorts correctly as strings)
-  return posts.sort((a, b) => (a.date < b.date ? 1 : -1));
+  return posts.sort((a, b) =>
+    String(a.date ?? "") < String(b.date ?? "") ? 1 : -1,
+  );
 }
 
-export function getInsightBySlug(slug: string): {
-  meta: InsightMeta;
-  content: string;
-} {
+export function getInsightBySlug(slug: string): InsightPost {
   const files = fs.readdirSync(INSIGHTS_DIR).filter((f) => f.endsWith(".mdx"));
 
-  // match file that ends with "${slug}.mdx" after stripping numeric prefix
   const match = files.find(
     (file) => file.replace(/^\d+-/, "").replace(/\.mdx$/, "") === slug,
   );
@@ -54,13 +66,7 @@ export function getInsightBySlug(slug: string): {
   const { data, content } = matter(raw);
 
   return {
-    meta: {
-      slug,
-      title: String(data.title ?? slug),
-      description: String(data.description ?? ""),
-      date: String(data.date ?? ""),
-      tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
-    },
+    meta: normalizeMeta(slug, data as Record<string, unknown>),
     content,
   };
 }

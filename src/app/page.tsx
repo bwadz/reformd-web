@@ -234,29 +234,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
-      {/* HEADER */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-white/10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-4">
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/images/04-horizontal-basic-white.svg"
-              alt="Re:Formd"
-              width={140}
-              height={32}
-              priority
-            />
-          </Link>
-
-          <button
-            onClick={onJoinWaitlist}
-            className="rounded-xl bg-white px-4 sm:px-6 py-2 text-sm font-semibold text-black transition hover:opacity-90"
-            type="button"
-          >
-            Join the Waitlist
-          </button>
-        </div>
-      </header>
-
       {/* HERO */}
       <section className="relative min-h-[100svh] overflow-hidden pt-20 sm:pt-24">
         <div
@@ -612,7 +589,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-black/70" />
 
           <div className="relative w-full max-w-2xl rounded-3xl border border-black/10 bg-white text-black shadow-2xl max-h-[90svh] flex flex-col">
-            {/* TOP: Brand */}
+            {/* TOP: Brand */}å
             <div className="flex items-center justify-between gap-4 border-b border-black/10 px-6 py-5 sm:px-8">
               <div className="flex items-center gap-3">
                 <Image
@@ -633,7 +610,6 @@ export default function HomePage() {
                 ✕
               </button>
             </div>
-
             {(() => {
               const email = form.email.trim().toLowerCase();
               const emailValid = isValidEmail(email);
