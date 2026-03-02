@@ -9,7 +9,7 @@ export const metadata = {
 export default function InsightsIndexPage() {
   const posts = getAllInsights()
     .slice()
-    .sort((a, b) => (a.date < b.date ? 1 : -1));
+    .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
 
   return (
     <main className="min-h-screen bg-black text-white">
