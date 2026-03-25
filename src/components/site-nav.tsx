@@ -55,6 +55,7 @@ export default function SiteNav() {
         <nav className="hidden md:flex items-center gap-6">
           <NavItem href="/" label="Home" />
           <NavItem href="/insights" label="Insights" />
+          <NavItem href="/book" label="Book" />
         </nav>
 
         {/* Right: CTA */}
