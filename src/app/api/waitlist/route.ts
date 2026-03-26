@@ -17,6 +17,9 @@ type WaitlistPayload = {
   timeframe?: string | null;
   notes?: string | null;
 
+  app_beta_opt_in?: boolean | null;
+  book_prerelease_opt_in?: boolean | null;
+
   // anti-spam
   website?: string | null;
 
@@ -198,6 +201,9 @@ export async function POST(req: Request) {
       biggest_issue: body.biggest_issue ?? null,
       timeframe: body.timeframe ?? null,
       notes: body.notes ?? null,
+
+      app_beta_opt_in: body.app_beta_opt_in === true,
+      book_prerelease_opt_in: body.book_prerelease_opt_in === true,
 
       landing_url: body.landing_url ?? null,
       referrer: body.referrer ?? null,

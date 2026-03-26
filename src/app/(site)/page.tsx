@@ -13,6 +13,9 @@ type WaitlistForm = {
   age_bracket: string;
   gender: string;
 
+  app_beta_opt_in: boolean;
+  book_prerelease_opt_in: boolean;
+
   // optional
   goal: string; // pipe-separated checkbox values
   biggest_issue: string; // pipe-separated checkbox values
@@ -58,6 +61,9 @@ const initialForm: WaitlistForm = {
   age_bracket: "",
   gender: "",
 
+  app_beta_opt_in: false,
+  book_prerelease_opt_in: false,
+
   goal: "",
   biggest_issue: "",
   notes: "",
@@ -81,6 +87,8 @@ export default function HomePage() {
     null,
   );
   const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [thankYouOpen, setThankYouOpen] = useState(false);
+  const [thankYouAlready, setThankYouAlready] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState<WaitlistForm>(initialForm);
@@ -103,6 +111,15 @@ export default function HomePage() {
       // ignore
     }
   }, []);
+
+  useEffect(() => {
+    if (!thankYouOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setThankYouOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [thankYouOpen]);
 
   function showToast(msg: string, type: ToastType = "success", ms = 3000) {
     setToast({ msg, type });
@@ -180,6 +197,9 @@ export default function HomePage() {
           timeframe: form.timeframe || null,
           notes: form.notes || null,
 
+          app_beta_opt_in: form.app_beta_opt_in,
+          book_prerelease_opt_in: form.book_prerelease_opt_in,
+
           // attribution
           landing_url: form.landing_url || null,
           referrer: form.referrer || null,
@@ -210,12 +230,8 @@ export default function HomePage() {
 
       closeWaitlist();
       resetForm();
-
-      showToast(
-        already ? "You’re already on the list." : "Check your email to verify.",
-        "success",
-        3200,
-      );
+      setThankYouAlready(already);
+      setThankYouOpen(true);
     } catch (e) {
       const msg =
         e instanceof Error ? e.message : "Something broke. Try again.";
@@ -589,7 +605,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-black/70" />
 
           <div className="relative w-full max-w-2xl rounded-3xl border border-black/10 bg-white text-black shadow-2xl max-h-[90svh] flex flex-col">
-            {/* TOP: Brand */}å
+            {/* TOP: Brand */}
             <div className="flex items-center justify-between gap-4 border-b border-black/10 px-6 py-5 sm:px-8">
               <div className="flex items-center gap-3">
                 <Image
@@ -637,10 +653,10 @@ export default function HomePage() {
 
               return (
                 <div className="px-6 py-6 sm:px-8 sm:py-7 overflow-y-auto overscroll-contain flex-1">
-                  {/* REQUIRED */}
+                  {/* Core fields */}
                   <div>
                     <div className="text-[13px] font-extrabold tracking-[0.22em] text-black/75">
-                      REQUIRED DETAILS
+                      YOUR DETAILS
                     </div>
                     <p className="mt-2 text-xs text-black/55">
                       You’re not on the list until you confirm via email.
@@ -665,11 +681,7 @@ export default function HomePage() {
                           <div className="mt-2 text-xs font-semibold text-red-600">
                             Name is required.
                           </div>
-                        ) : (
-                          <div className="mt-2 text-xs font-semibold text-emerald-700">
-                            Solid. ✅
-                          </div>
-                        )}
+                        ) : null}
                       </div>
 
                       {/* Email */}
@@ -752,15 +764,60 @@ export default function HomePage() {
                         ) : null}
                       </div>
                     </div>
+
+                    {/* Opt-ins (below age / gender) */}
+                    <div className="mt-7 space-y-3 rounded-2xl border border-black/10 bg-black/[0.02] p-4">
+                      <label className="flex cursor-pointer items-start gap-3 text-sm text-black/75">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 h-4 w-4 shrink-0 rounded border-black/20"
+                          checked={form.app_beta_opt_in}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              app_beta_opt_in: e.target.checked,
+                            })
+                          }
+                        />
+                        <span>
+                          Sign me up for the Re:Formd app beta
+                        </span>
+                      </label>
+                      <label className="flex cursor-pointer items-start gap-3 text-sm text-black/75">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 h-4 w-4 shrink-0 rounded border-black/20"
+                          checked={form.book_prerelease_opt_in}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              book_prerelease_opt_in: e.target.checked,
+                            })
+                          }
+                        />
+                        <span>
+                          Send me the{" "}
+                          <span className="italic text-black/85">
+                            You Are Not Dead Yet
+                          </span>{" "}
+                          pre-release book
+                        </span>
+                      </label>
+                    </div>
                   </div>
 
-                  {/* OPTIONAL */}
-                  <div className="mt-7 border-t border-black/10 pt-6">
-                    <div className="text-[13px] font-extrabold tracking-[0.22em] text-black/75">
-                      OPTIONAL DETAILS
-                    </div>
+                  {/* Optional — collapsed by default */}
+                  <details className="mt-6 border-t border-black/10 pt-6">
+                    <summary className="cursor-pointer list-none text-sm font-semibold text-black/70 hover:text-black [&::-webkit-details-marker]:hidden">
+                      <span className="inline-flex items-center gap-2">
+                        <span>Optional details</span>
+                        <span className="text-xs font-normal text-black/45">
+                          (goals, issues, interests)
+                        </span>
+                      </span>
+                    </summary>
                     <p className="mt-2 text-xs text-black/55">
-                      Pick what fits. This improves what we send you.
+                      Pick what fits. This helps us tailor what we send you.
                     </p>
 
                     {/* Primary goals */}
@@ -881,45 +938,96 @@ export default function HomePage() {
                         ))}
                       </div>
                     </div>
+                  </details>
 
-                    {/* Footer actions */}
-                    <div className="mt-7 flex flex-col items-center gap-3">
-                      <button
-                        onClick={submitWaitlist}
-                        disabled={!canSubmit}
-                        className={`w-full sm:w-auto rounded-2xl px-10 py-3 text-sm font-semibold transition ${
-                          canSubmit
-                            ? "bg-black text-white hover:opacity-90"
-                            : "bg-black/10 text-black/35 cursor-not-allowed"
-                        }`}
-                        type="button"
-                      >
-                        {submitting
-                          ? "Submitting..."
-                          : "Send verification email"}
-                      </button>
+                  {/* Submit */}
+                  <div className="mt-7 flex flex-col items-center gap-3">
+                    <button
+                      onClick={submitWaitlist}
+                      disabled={!canSubmit}
+                      className={`w-full sm:w-auto rounded-2xl px-10 py-3 text-sm font-semibold transition ${
+                        canSubmit
+                          ? "bg-black text-white hover:opacity-90"
+                          : "bg-black/10 text-black/35 cursor-not-allowed"
+                      }`}
+                      type="button"
+                    >
+                      {submitting
+                        ? "Submitting..."
+                        : "Send verification email"}
+                    </button>
 
-                      <p className="text-center text-xs text-black/55">
-                        We’ll email you a verification link. You’re not added
-                        until you confirm.
-                      </p>
+                    <p className="text-center text-xs text-black/55">
+                      We’ll email you a verification link. You’re not added
+                      until you confirm.
+                    </p>
 
-                      {/* honeypot (hidden) */}
-                      <input
-                        tabIndex={-1}
-                        autoComplete="off"
-                        value={form.website}
-                        onChange={(e) =>
-                          setForm({ ...form, website: e.target.value })
-                        }
-                        className="hidden"
-                        aria-hidden="true"
-                      />
-                    </div>
+                    {/* honeypot (hidden) */}
+                    <input
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={form.website}
+                      onChange={(e) =>
+                        setForm({ ...form, website: e.target.value })
+                      }
+                      className="hidden"
+                      aria-hidden="true"
+                    />
                   </div>
                 </div>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* THANK YOU (post–waitlist success) */}
+      {thankYouOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center px-4"
+          aria-modal="true"
+          role="dialog"
+          aria-labelledby="waitlist-thankyou-title"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setThankYouOpen(false);
+          }}
+        >
+          <div className="absolute inset-0 bg-black/75" />
+
+          <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-zinc-950 p-8 text-center shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setThankYouOpen(false)}
+              className="absolute right-4 top-4 rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-sm text-white/70 hover:bg-white/10"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400/90">
+              Re:Formd
+            </p>
+            <h2
+              id="waitlist-thankyou-title"
+              className="mt-4 text-2xl font-semibold tracking-tight text-white"
+            >
+              {thankYouAlready
+                ? "You’re already on the list"
+                : "Thank you for joining the waitlist"}
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-white/75">
+              {thankYouAlready
+                ? "We have your email on file. We’ll let you know when there’s news."
+                : "We will let you know via email when it is ready to go."}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setThankYouOpen(false)}
+              className="mt-8 w-full rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-black transition hover:opacity-90"
+            >
+              Got it
+            </button>
           </div>
         </div>
       )}
